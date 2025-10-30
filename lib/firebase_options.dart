@@ -60,4 +60,5 @@ class DefaultFirebaseOptions {
     authDomain: 'freebird-app-587de.firebaseapp.com',
     storageBucket: 'freebird-app-587de.firebasestorage.app',
   );
+
 }
