@@ -4,8 +4,28 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
-void main() {
+const FirebaseOptions windows = FirebaseOptions(
+  apiKey: 'AIzaSyCoE-xYJf3OsKpZBrYgLFXCbQIm4aAHH0c',
+  appId: '1:953042776685:web:695a3c3d5157c373a94564',
+  messagingSenderId: '953042776685',
+  projectId: 'freebird-app-587de',
+  authDomain: 'freebird-app-587de.firebaseapp.com',
+  storageBucket: 'freebird-app-587de.firebasestorage.app',
+);
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(options: windows);
+  } catch (e) {
+    debugPrint('Failed to initialize Firebase: $e');
+  }
   runApp(const MyApp());
 }
 
@@ -35,19 +55,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-  // Build method: compute responsive button dimensions used by the
-  // bottom navigation row.
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonSize = min(screenWidth / 5, 120.0);
 
     return Scaffold(
       body: Column(
         children: [
-          // Main content area (empty by design)
           const Expanded(child: SizedBox.shrink()),
         ],
       ),
-      // Use bottomNavigationBar so the row sits flush with the bottom edge.
       bottomNavigationBar: SizedBox(
         height: buttonSize,
         child: Row(
@@ -57,8 +73,7 @@ class _MyHomePageState extends State<MyHomePage> {
               height: buttonSize,
               child: ElevatedButton(
                 onPressed: () {
-              // Map each bottom button to its page: page = index + 1
-              final targetPage = index + 1;
+                  final targetPage = index + 1;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -71,7 +86,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.zero,
                   ),
-                  // light grey background
                   backgroundColor: Colors.grey.shade200,
                   side: const BorderSide(color: Colors.black, width: 0.5),
                   elevation: 0,
@@ -86,8 +100,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Simple destination page used by each bottom button. Special-case
-// layout for Documents (page 3) below.
 class SimplePage extends StatelessWidget {
   final int pageIndex;
 
@@ -95,22 +107,17 @@ class SimplePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  // Special layout for page 3: Documents header + three centered square
-  // buttons that navigate to Camera/File Upload/Stored Documents pages.
-  if (pageIndex == 3) {
+    if (pageIndex == 3) {
       final screenWidth = MediaQuery.of(context).size.width;
-      // Use a button size that's a fraction of the screen width but capped.
       final buttonSize = min(screenWidth * 0.22, 140.0);
 
       return Scaffold(
         appBar: AppBar(
-          // Keep the back label on the left as requested previously.
           title: const Text('Back'),
           centerTitle: false,
         ),
         body: Column(
           children: [
-            // Light grey header with bold "Documents" centered
             Container(
               width: double.infinity,
               color: Colors.grey.shade200,
@@ -122,7 +129,6 @@ class SimplePage extends StatelessWidget {
                 ),
               ),
             ),
-            // Centered horizontal buttons with spacing
             Expanded(
               child: Center(
                 child: Row(
@@ -199,7 +205,6 @@ class SimplePage extends StatelessWidget {
       return const TranslationAndCurrencyPage();
     }
 
-    // Default simple page for other indices
     return Scaffold(
       appBar: AppBar(title: Text('Page $pageIndex')),
       body: Center(
@@ -235,7 +240,6 @@ class _TranslationAndCurrencyPageState extends State<TranslationAndCurrencyPage>
   String _conversionResult = '';
   bool _converting = false;
 
-  // Languages supported by DeepL
   final List<Map<String, String>> _languages = [
     {'name': 'Spanish', 'code': 'ES'},
     {'name': 'French', 'code': 'FR'},
@@ -302,7 +306,6 @@ class _TranslationAndCurrencyPageState extends State<TranslationAndCurrencyPage>
 
     try {
       if (_fromCurrency == 'CAD' && _toCurrency != 'CAD') {
-        // CAD -> OTHER: series FX{TO}CAD returns CAD per 1 TO
         final seriesTo = 'FX${_toCurrency}CAD';
         final urlTo = Uri.parse('https://www.bankofcanada.ca/valet/observations/$seriesTo/json');
         final respTo = await ioClient.get(urlTo).timeout(const Duration(seconds: 10));
@@ -313,12 +316,12 @@ class _TranslationAndCurrencyPageState extends State<TranslationAndCurrencyPage>
           if (obsTo != null && obsTo.isNotEmpty) {
             final latestTo = obsTo.last;
             final valueStrTo = (latestTo[seriesTo]?['v'] ?? latestTo[seriesTo])?.toString();
-            final rateTo = double.tryParse(valueStrTo ?? '0') ?? 0.0; // CAD per TO
+            final rateTo = double.tryParse(valueStrTo ?? '0') ?? 0.0;
             if (rateTo == 0) {
               setState(() => _conversionResult = 'No rate data available.');
             } else {
-              final rate = 1 / rateTo; // TO per CAD
-              final converted = amount * rate; // amount CAD -> TO
+              final rate = 1 / rateTo;
+              final converted = amount * rate;
               setState(() => _conversionResult = '${converted.toStringAsFixed(4)} $_toCurrency (rate: ${rate.toStringAsFixed(6)})');
             }
           } else {
@@ -328,7 +331,6 @@ class _TranslationAndCurrencyPageState extends State<TranslationAndCurrencyPage>
           setState(() => _conversionResult = 'Rate API error: ${respTo.statusCode}');
         }
       } else if (_fromCurrency != 'CAD' && _toCurrency == 'CAD') {
-        // FROM -> CAD: series FX{FROM}CAD returns CAD per 1 FROM
         final seriesFrom = 'FX${_fromCurrency}CAD';
         final urlFrom = Uri.parse('https://www.bankofcanada.ca/valet/observations/$seriesFrom/json');
         final respFrom = await ioClient.get(urlFrom).timeout(const Duration(seconds: 10));
@@ -411,7 +413,6 @@ class _TranslationAndCurrencyPageState extends State<TranslationAndCurrencyPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Translator card
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
@@ -464,7 +465,6 @@ class _TranslationAndCurrencyPageState extends State<TranslationAndCurrencyPage>
               ),
             ),
             const SizedBox(height: 16),
-            // Currency converter card
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
@@ -545,26 +545,401 @@ class CameraPage extends StatelessWidget {
   }
 }
 
-class FileUploadPage extends StatelessWidget {
+class FileUploadPage extends StatefulWidget {
   const FileUploadPage({super.key});
+
+  @override
+  State<FileUploadPage> createState() => _FileUploadPageState();
+}
+
+class _FileUploadPageState extends State<FileUploadPage> {
+  bool _uploading = false;
+  String _uploadStatus = '';
+
+  Future<void> _pickAndUploadFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
+      );
+
+      if (result == null || result.files.isEmpty) {
+        setState(() => _uploadStatus = 'No file selected');
+        return;
+      }
+
+      final file = result.files.first;
+      if (file.path == null) {
+        setState(() => _uploadStatus = 'Invalid file path');
+        return;
+      }
+
+      setState(() {
+        _uploading = true;
+        _uploadStatus = 'Uploading ${file.name}...';
+      });
+
+      final storageRef = FirebaseStorage.instance.ref();
+      final fileRef = storageRef.child('uploads/${DateTime.now().millisecondsSinceEpoch}_${file.name}');
+
+      await fileRef.putFile(File(file.path!));
+
+      final downloadUrl = await fileRef.getDownloadURL();
+
+      await FirebaseFirestore.instance.collection('files').add({
+        'name': file.name,
+        'url': downloadUrl,
+        'storagePath': fileRef.fullPath,
+        'type': file.extension ?? 'unknown',
+        'size': file.size,
+        'uploadedAt': FieldValue.serverTimestamp(),
+      });
+
+      setState(() {
+        _uploading = false;
+        _uploadStatus = 'Upload complete: ${file.name}';
+      });
+
+    } catch (e) {
+      setState(() {
+        _uploading = false;
+        _uploadStatus = 'Upload failed: $e';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('File Upload')),
-      body: const Center(child: Text('File upload page')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton.icon(
+              onPressed: _uploading ? null : _pickAndUploadFile,
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Choose File & Upload'),
+            ),
+            const SizedBox(height: 20),
+            if (_uploading)
+              const Center(child: CircularProgressIndicator()),
+            if (_uploadStatus.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Text(_uploadStatus, textAlign: TextAlign.center),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class StoredDocumentsPage extends StatelessWidget {
+class StoredDocumentsPage extends StatefulWidget {
   const StoredDocumentsPage({super.key});
+
+  @override
+  State<StoredDocumentsPage> createState() => _StoredDocumentsPageState();
+}
+
+class _StoredDocumentsPageState extends State<StoredDocumentsPage> {
+  bool _isFirebaseInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFirebaseInitialization();
+  }
+
+  Future<void> _checkFirebaseInitialization() async {
+    try {
+      await Firebase.initializeApp();
+      if (mounted) {
+        setState(() {
+          _isFirebaseInitialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Firebase initialization error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to initialize Firebase. Some features may not work.'),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadFile(String url, String fileName) async {
+      if (!_isFirebaseInitialized) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Firebase is not initialized')),
+        );
+        return;
+      }    final progress = ValueNotifier<double?>(0.0);
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Downloading'),
+          content: SizedBox(
+            height: 80,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ValueListenableBuilder<double?>(
+                  valueListenable: progress,
+                  builder: (_, value, __) {
+                    if (value == null) {
+                      return const LinearProgressIndicator();
+                    }
+                    return Column(
+                      children: [
+                        LinearProgressIndicator(value: value),
+                        const SizedBox(height: 8),
+                        Text('${(value * 100).toStringAsFixed(0)}%'),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      if (url.isEmpty) throw Exception('Empty download URL');
+      final uri = Uri.tryParse(url);
+      if (uri == null || !(uri.scheme == 'http' || uri.scheme == 'https')) {
+        throw Exception('Invalid file URL');
+      }
+
+      debugPrint('Starting streamed download from $url');
+
+      final client = http.Client();
+      final request = http.Request('GET', uri);
+      final streamedResp = await client.send(request).timeout(const Duration(seconds: 60));
+
+      if (streamedResp.statusCode != 200) {
+        throw Exception('HTTP ${streamedResp.statusCode}');
+      }
+
+      final contentLength = streamedResp.contentLength;
+
+      Directory? dir;
+      try {
+        dir = await getDownloadsDirectory();
+      } catch (e) {
+        debugPrint('getDownloadsDirectory error: $e');
+        dir = null;
+      }
+      dir ??= await getApplicationDocumentsDirectory();
+
+      final sanitizedBase = fileName.replaceAll(RegExp(r'[<>:\"/\\|?*]'), '_');
+      final savePath = await _uniqueFilePath(dir, sanitizedBase);
+
+      final file = File(savePath);
+      await file.create(recursive: true);
+      final sink = file.openWrite();
+
+      int received = 0;
+      if (contentLength == null) progress.value = null;
+
+      await for (final chunk in streamedResp.stream) {
+        sink.add(chunk);
+        received += chunk.length;
+        if (contentLength != null) {
+          progress.value = received / contentLength;
+        }
+      }
+
+      await sink.close();
+      client.close();
+
+      progress.value = 1.0;
+      debugPrint('Saved file to ${file.path}');
+
+      if (mounted) Navigator.of(context).pop();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Downloaded to: ${file.path}')),
+        );
+      }
+    } catch (e, st) {
+      debugPrint('Download failed: $e\n$st');
+      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $e')),
+        );
+      }
+    } finally {
+      progress.dispose();
+    }
+  }
+
+  Future<String> _uniqueFilePath(Directory dir, String fileName) async {
+    final sep = Platform.pathSeparator;
+    final index = fileName.lastIndexOf('.');
+    String base = fileName;
+    String ext = '';
+    if (index != -1) {
+      base = fileName.substring(0, index);
+      ext = fileName.substring(index);
+    }
+
+    String candidate = '${dir.path}$sep$fileName';
+    int counter = 1;
+    while (await File(candidate).exists()) {
+      candidate = '${dir.path}$sep${base}_$counter$ext';
+      counter++;
+    }
+    return candidate;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Stored Documents')),
-      body: const Center(child: Text('Stored documents page')),
+      body: !_isFirebaseInitialized
+      ? const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Initializing Firebase...'),
+            ],
+          ),
+        )
+      : StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+          .collection('files')
+          .orderBy('uploadedAt', descending: true)
+          .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final docs = snapshot.data?.docs ?? [];
+          
+          if (docs.isEmpty) {
+            return const Center(child: Text('No documents found'));
+          }
+
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index];
+              final data = doc.data() as Map<String, dynamic>;
+              final fileName = data['name'] as String;
+              final fileUrl = data['url'] as String;
+              final storagePath = data['storagePath'] as String?;
+              final fileSize = (data['size'] as int?) ?? 0;
+              final uploadTime = (data['uploadedAt'] as Timestamp?)?.toDate();
+
+              return ListTile(
+                leading: Icon(_getFileIcon(fileName)),
+                title: Text(fileName),
+                subtitle: Text(_formatFileInfo(fileSize, uploadTime)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.download),
+                      onPressed: () => _downloadFile(fileUrl, fileName),
+                      tooltip: 'Download',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.redAccent),
+                      onPressed: () => _confirmAndDelete(doc.id, storagePath, fileName),
+                      tooltip: 'Delete',
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
+  }
+
+  IconData _getFileIcon(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return Icons.image;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  String _formatFileInfo(int size, DateTime? uploadTime) {
+    final sizeStr = size < 1024 * 1024 
+      ? '${(size / 1024).toStringAsFixed(1)} KB'
+      : '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
+    
+    final timeStr = uploadTime != null
+      ? '${uploadTime.year}-${uploadTime.month.toString().padLeft(2, '0')}-${uploadTime.day.toString().padLeft(2, '0')}'
+      : 'Unknown date';
+
+    return '$sizeStr • $timeStr';
+  }
+
+  Future<void> _confirmAndDelete(String docId, String? storagePath, String fileName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete file'),
+        content: Text('Are you sure you want to delete "$fileName"? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // Proceed with deletion
+    try {
+      if (storagePath != null && storagePath.isNotEmpty) {
+        final ref = FirebaseStorage.instance.ref().child(storagePath);
+        await ref.delete();
+      }
+
+      await FirebaseFirestore.instance.collection('files').doc(docId).delete();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Deleted $fileName')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+      }
+    }
   }
 }
