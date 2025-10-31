@@ -9,6 +9,10 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'login_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+
 
 const FirebaseOptions windows = FirebaseOptions(
   apiKey: 'AIzaSyCoE-xYJf3OsKpZBrYgLFXCbQIm4aAHH0c',
@@ -31,18 +35,39 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
+      title: 'Free Bird',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
-      home: const MyHomePage(),
+      // 👇 Show login page or home page depending on FirebaseAuth state
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasData) {
+            return const MyHomePage(); // logged in
+          }
+          return const LoginPage(); // not logged in
+        },
+      ),
+      routes: {
+        '/home': (context) => const MyHomePage(),
+        '/login': (context) => const LoginPage(),
+      },
     );
   }
 }
+
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -52,17 +77,32 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonSize = min(screenWidth / 5, 120.0);
 
     return Scaffold(
-      body: Column(
-        children: [
-          const Expanded(child: SizedBox.shrink()),
+      appBar: AppBar(
+        title: Text(
+          'Welcome ${FirebaseAuth.instance.currentUser?.email ?? ''}',
+          style: const TextStyle(fontSize: 16),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sign out',
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+            },
+          ),
         ],
+      ),
+      body: const Center(
+        child: Text(
+          'Welcome to Free Bird!',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+        ),
       ),
       bottomNavigationBar: SizedBox(
         height: buttonSize,
@@ -90,7 +130,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   side: const BorderSide(color: Colors.black, width: 0.5),
                   elevation: 0,
                 ),
-                child: Icon(Icons.add, size: 24, color: Colors.black),
+                child: Icon(
+                  _getButtonIcon(index),
+                  size: 26,
+                  color: Colors.black,
+                ),
               ),
             );
           }),
@@ -98,7 +142,26 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+
+  // Optional: Icons for the bottom buttons (for visual clarity)
+  IconData _getButtonIcon(int index) {
+    switch (index) {
+      case 0:
+        return Icons.home;
+      case 1:
+        return Icons.flight_takeoff;
+      case 2:
+        return Icons.camera_alt;
+      case 3:
+        return Icons.circle_outlined;
+      case 4:
+        return Icons.circle_outlined;
+      default:
+        return Icons.add;
+    }
+  }
 }
+
 
 class SimplePage extends StatelessWidget {
   final int pageIndex;
