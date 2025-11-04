@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'login_page.dart';
+import 'create_account_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 
@@ -63,6 +64,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/home': (context) => const MyHomePage(),
         '/login': (context) => const LoginPage(),
+        '/create-account': (context) => const CreateAccountPage(),
       },
     );
   }
