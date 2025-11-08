@@ -107,6 +107,9 @@ class SimplePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (pageIndex == 1){
+      return const FlightInputPage();
+    }
     if (pageIndex == 3) {
       final screenWidth = MediaQuery.of(context).size.width;
       final buttonSize = min(screenWidth * 0.22, 140.0);
@@ -404,6 +407,7 @@ class _TranslationAndCurrencyPageState extends State<TranslationAndCurrencyPage>
     super.dispose();
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -532,7 +536,33 @@ class _TranslationAndCurrencyPageState extends State<TranslationAndCurrencyPage>
     );
   }
 }
+class FlightInputPage extends StatefulWidget {
+  const FlightInputPage({super.key});
 
+  @override
+  State<FlightInputPage> createState() => _FlightInputPageStae();
+}
+class _FlightInputPageState extends State<FlightInputPage> {
+// List to store all flights - each flight is a Map with key-value pairs
+  final List<Map<String, dynamic>> _flights = [];
+  
+  // Controllers to get text from input fields
+  final TextEditingController _airlineController = TextEditingController();
+  final TextEditingController _flightNumberController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController();
+  
+  DateTime? _selectedDate;
+
+   @override
+  void initState() {   
+    // initState runs when the widget is first created
+    super.initState();
+    _loadSampleFlights(); // Load some example flights when page starts
+  }
+
+
+
+}
 class CameraPage extends StatelessWidget {
   const CameraPage({super.key});
 
