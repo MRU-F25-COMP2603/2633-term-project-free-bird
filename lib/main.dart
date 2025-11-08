@@ -155,11 +155,11 @@ class _MyHomePageState extends State<MyHomePage> {
       case 2:
         return Icons.camera_alt;
       case 3:
-        return Icons.circle_outlined;
+        return Icons.translate;
       case 4:
-        return Icons.circle_outlined;
+        return Icons.settings;
       default:
-        return Icons.add;
+        return Icons.help_outline;
     }
   }
 }
@@ -622,56 +622,87 @@ class _FileUploadPageState extends State<FileUploadPage> {
   String _uploadStatus = '';
 
   Future<void> _pickAndUploadFile() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.any,
-        allowMultiple: false,
-      );
+  try {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      allowMultiple: false,
+    );
 
-      if (result == null || result.files.isEmpty) {
-        setState(() => _uploadStatus = 'No file selected');
-        return;
-      }
-
-      final file = result.files.first;
-      if (file.path == null) {
-        setState(() => _uploadStatus = 'Invalid file path');
-        return;
-      }
-
-      setState(() {
-        _uploading = true;
-        _uploadStatus = 'Uploading ${file.name}...';
-      });
-
-      final storageRef = FirebaseStorage.instance.ref();
-      final fileRef = storageRef.child('uploads/${DateTime.now().millisecondsSinceEpoch}_${file.name}');
-
-      await fileRef.putFile(File(file.path!));
-
-      final downloadUrl = await fileRef.getDownloadURL();
-
-      await FirebaseFirestore.instance.collection('files').add({
-        'name': file.name,
-        'url': downloadUrl,
-        'storagePath': fileRef.fullPath,
-        'type': file.extension ?? 'unknown',
-        'size': file.size,
-        'uploadedAt': FieldValue.serverTimestamp(),
-      });
-
-      setState(() {
-        _uploading = false;
-        _uploadStatus = 'Upload complete: ${file.name}';
-      });
-
-    } catch (e) {
-      setState(() {
-        _uploading = false;
-        _uploadStatus = 'Upload failed: $e';
-      });
+    if (result == null || result.files.isEmpty) {
+      setState(() => _uploadStatus = 'No file selected');
+      return;
     }
+
+    final file = result.files.first;
+    if (file.path == null) {
+      setState(() => _uploadStatus = 'Invalid file path');
+      return;
+    }
+
+    // Ask user to name their file
+    final TextEditingController nameController = TextEditingController(
+      text: file.name.split('.').first,
+    );
+    final customName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Name your file'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(labelText: 'File name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(nameController.text.trim()),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (customName == null || customName.isEmpty) {
+      setState(() => _uploadStatus = 'Upload cancelled');
+      return;
+    }
+
+    setState(() {
+      _uploading = true;
+      _uploadStatus = 'Uploading ${file.name}...';
+    });
+
+    final ext = file.extension ?? 'unknown';
+    final storageRef = FirebaseStorage.instance.ref();
+    final fileRef = storageRef.child('uploads/${DateTime.now().millisecondsSinceEpoch}_${customName}.$ext');
+
+    await fileRef.putFile(File(file.path!));
+    final downloadUrl = await fileRef.getDownloadURL();
+
+    await FirebaseFirestore.instance.collection('files').add({
+      'name': '$customName.$ext',
+      'url': downloadUrl,
+      'storagePath': fileRef.fullPath,
+      'type': ext,
+      'size': file.size,
+      'uploadedAt': FieldValue.serverTimestamp(),
+    });
+
+    setState(() {
+      _uploading = false;
+      _uploadStatus = 'Upload complete: ${customName}.$ext';
+    });
+
+  } catch (e) {
+    setState(() {
+      _uploading = false;
+      _uploadStatus = 'Upload failed: $e';
+    });
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
