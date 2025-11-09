@@ -559,10 +559,48 @@ class _FlightInputPageState extends State<FlightInputPage> {
     super.initState();
     _loadSampleFlights(); // Load some example flights when page starts
   }
+  void _loadSampleFlights(){
+    setState(() {
+      _flights.addAll([
+        {
+          'airline': 'Air Canada',
+          'flightNumber': 'AC 472',
+          'date': 'Nov 18, 2025',
+          'destination': 'Honolulu, HI',
+          'status': 'Scheduled'
+        },
+        {
+          'airline': 'WestJet',
+          'flightNumber': 'WS 1234',
+          'date': 'Dec 15, 2025',
+          'destination': 'Cancun, MX',
+          'status': 'Booked'
+        },
+      ]);
+    });
+  }
 
+  // Opens a date picker dialog for user to select a date
+  Future<void> _selectDate() async {
+    // showDatePicker returns a Future (async operation) that completes when user picks a date
+    final DateTime? picked = await showDatePicker(
+      context: context, // context is needed to show the dialog
+      initialDate: DateTime.now(), // Start with today's date selected
+      firstDate: DateTime(2025), // Can't pick dates before 2025
+      lastDate: DateTime(2030), // Can't pick dates after 2030
+    );
+    
+    // If user picked a date and it's different from current selection
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        // Update the text field with the selected date
+        _dateController.text = "${picked.month}/${picked.day}/${picked.year}";
+      });
+    }
+  }
+  }
 
-
-}
 class CameraPage extends StatelessWidget {
   const CameraPage({super.key});
 
