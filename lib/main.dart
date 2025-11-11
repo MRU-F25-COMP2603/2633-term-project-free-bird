@@ -5,10 +5,12 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'login_page.dart';
 
 const FirebaseOptions windows = FirebaseOptions(
   apiKey: 'AIzaSyCoE-xYJf3OsKpZBrYgLFXCbQIm4aAHH0c',
@@ -35,11 +37,34 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
+      title: 'Free Bird',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(),
+      routes: {
+        '/home': (context) => const MyHomePage(),
+      },
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          // Show loading indicator while checking auth state
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+          
+          // If user is logged in, show home page
+          if (snapshot.hasData) {
+            return const MyHomePage();
+          }
+          
+          // Otherwise, show login page
+          return const LoginPage();
+        },
+      ),
     );
   }
 }
@@ -53,12 +78,27 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
 
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonSize = min(screenWidth / 5, 120.0);
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Free Bird'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+            tooltip: 'Logout',
+          ),
+        ],
+      ),
       body: Column(
         children: [
           const Expanded(child: SizedBox.shrink()),
@@ -68,6 +108,15 @@ class _MyHomePageState extends State<MyHomePage> {
         height: buttonSize,
         child: Row(
           children: List.generate(5, (index) {
+            // Define icons for each page
+            final icons = [
+              Icons.flight,           // Page 1: Flights
+              Icons.home,             // Page 2: Home/placeholder
+              Icons.folder,           // Page 3: Documents
+              Icons.translate,        // Page 4: Translation & Currency
+              Icons.settings,         // Page 5: Settings/placeholder
+            ];
+            
             return SizedBox(
               width: screenWidth / 5,
               height: buttonSize,
@@ -90,7 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   side: const BorderSide(color: Colors.black, width: 0.5),
                   elevation: 0,
                 ),
-                child: Icon(Icons.add, size: 24, color: Colors.black),
+                child: Icon(icons[index], size: 24, color: Colors.black),
               ),
             );
           }),
