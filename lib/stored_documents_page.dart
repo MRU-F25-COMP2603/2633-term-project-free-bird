@@ -34,7 +34,18 @@ class StoredDocumentsPage extends StatelessWidget {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final docs = snapshot.data?.docs ?? [];
+          var docs = snapshot.data?.docs ?? [];
+          
+          // Sort documents by uploadedAt timestamp (most recent first)
+          docs.sort((a, b) {
+            final aTime = (a.data() as Map<String, dynamic>)['uploadedAt'] as Timestamp?;
+            final bTime = (b.data() as Map<String, dynamic>)['uploadedAt'] as Timestamp?;
+            if (aTime == null && bTime == null) return 0;
+            if (aTime == null) return 1;
+            if (bTime == null) return -1;
+            return bTime.compareTo(aTime);
+          });
+          
           if (docs.isEmpty) {
             return const Center(child: Text('No files found.'));
           }

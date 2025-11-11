@@ -1,17 +1,25 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FirestoreService {
   static final _filesRef = FirebaseFirestore.instance.collection('files');
   static final _storage = FirebaseStorage.instance;
 
   static Future<void> uploadFile(File file, String name, int size, String? extension) async {
-    final fileRef = _storage.ref().child('uploads/${DateTime.now().millisecondsSinceEpoch}_$name');
+    // Get current user ID
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    final fileRef = _storage.ref().child('uploads/$userId/${DateTime.now().millisecondsSinceEpoch}_$name');
     await fileRef.putFile(file);
     final url = await fileRef.getDownloadURL();
 
     await _filesRef.add({
+      'userId': userId,
       'name': name,
       'url': url,
       'storagePath': fileRef.fullPath,
@@ -22,7 +30,16 @@ class FirestoreService {
   }
 
   static Stream<QuerySnapshot> getFilesStream() {
-    return _filesRef.orderBy('uploadedAt', descending: true).snapshots();
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      // Return an empty stream if no user is authenticated
+      return const Stream.empty();
+    }
+    // Note: Removed orderBy to avoid needing a composite index
+    // Files will be sorted client-side in the UI if needed
+    return _filesRef
+        .where('userId', isEqualTo: userId)
+        .snapshots();
   }
 
   static Future<void> deleteFile(String docId, String? storagePath) async {

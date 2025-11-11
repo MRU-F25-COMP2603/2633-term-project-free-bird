@@ -41,6 +41,7 @@ dependencies:
   firebase_storage: ^12.3.2
 
   # --- Camera & File Handling ---
+  camera: ^0.11.0+2
   image_picker: ^1.1.2
   file_picker: ^8.0.0
   path: ^1.9.0
