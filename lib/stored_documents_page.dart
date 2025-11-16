@@ -24,65 +24,251 @@ class StoredDocumentsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Stored Documents')),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirestoreService.getFilesStream(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Your Documents', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 320,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirestoreService.getFilesStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
 
-          var docs = snapshot.data?.docs ?? [];
-          
-          // Sort documents by uploadedAt timestamp (most recent first)
-          docs.sort((a, b) {
-            final aTime = (a.data() as Map<String, dynamic>)['uploadedAt'] as Timestamp?;
-            final bTime = (b.data() as Map<String, dynamic>)['uploadedAt'] as Timestamp?;
-            if (aTime == null && bTime == null) return 0;
-            if (aTime == null) return 1;
-            if (bTime == null) return -1;
-            return bTime.compareTo(aTime);
-          });
-          
-          if (docs.isEmpty) {
-            return const Center(child: Text('No files found.'));
-          }
+                  var docs = snapshot.data?.docs ?? [];
+                  docs.sort((a, b) {
+                    final aTime = (a.data() as Map<String, dynamic>)['uploadedAt'] as Timestamp?;
+                    final bTime = (b.data() as Map<String, dynamic>)['uploadedAt'] as Timestamp?;
+                    if (aTime == null && bTime == null) return 0;
+                    if (aTime == null) return 1;
+                    if (bTime == null) return -1;
+                    return bTime.compareTo(aTime);
+                  });
 
-          return ListView.builder(
-            itemCount: docs.length,
-            itemBuilder: (context, i) {
-              final data = docs[i].data() as Map<String, dynamic>;
-              final fileName = data['name'] ?? 'Unnamed';
-              final url = data['url'] ?? '';
-              final path = data['storagePath'] as String?;
+                  if (docs.isEmpty) {
+                    return const Center(child: Text('No files found.'));
+                  }
 
-              return ListTile(
-                leading: Icon(Icons.insert_drive_file, color: Colors.blueAccent),
-                title: Text(fileName),
-                subtitle: Text('${(data['size'] / 1024).toStringAsFixed(1)} KB'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.download),
-                      onPressed: () => _downloadFile(url, fileName, context),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.redAccent),
-                      onPressed: () async {
-                        await FirestoreService.deleteFile(docs[i].id, path);
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Deleted $fileName')));
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
+                  return ListView.builder(
+                    itemCount: docs.length,
+                    itemBuilder: (context, i) {
+                      final doc = docs[i];
+                      final data = doc.data() as Map<String, dynamic>;
+                      final fileName = data['name'] ?? 'Unnamed';
+                      final url = data['url'] ?? '';
+                      final path = data['storagePath'] as String?;
+                      final shared = (data['sharedWith'] as List?)?.cast<String>() ?? const [];
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: const Icon(Icons.insert_drive_file, color: Colors.blueAccent),
+                          title: Text(fileName),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${(data['size'] / 1024).toStringAsFixed(1)} KB'),
+                              if (shared.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Wrap(
+                                    spacing: 4,
+                                    runSpacing: 4,
+                                    children: [
+                                      const Text('Shared with: ',
+                                          style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                      ...shared.map((email) => Chip(
+                                            label: Text(email, style: const TextStyle(fontSize: 11)),
+                                            deleteIcon: const Icon(Icons.close, size: 16),
+                                            onDeleted: () => _unshare(context, doc.id, email),
+                                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                                            visualDensity: VisualDensity.compact,
+                                          )),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.share, color: Colors.teal),
+                                tooltip: 'Share',
+                                onPressed: () => _share(context, doc.id),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.download),
+                                onPressed: () => _downloadFile(url, fileName, context),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                onPressed: () async {
+                                  await FirestoreService.deleteFile(doc.id, path);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(content: Text('Deleted $fileName')));
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            const Text('Shared Documents', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 320,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirestoreService.getSharedFilesStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+
+                  var docs = snapshot.data?.docs ?? [];
+                  docs.sort((a, b) {
+                    final aTime = (a.data() as Map<String, dynamic>)['uploadedAt'] as Timestamp?;
+                    final bTime = (b.data() as Map<String, dynamic>)['uploadedAt'] as Timestamp?;
+                    if (aTime == null && bTime == null) return 0;
+                    if (aTime == null) return 1;
+                    if (bTime == null) return -1;
+                    return bTime.compareTo(aTime);
+                  });
+
+                  if (docs.isEmpty) {
+                    return const Center(child: Text('No shared documents.'));
+                  }
+
+                  return ListView.builder(
+                    itemCount: docs.length,
+                    itemBuilder: (context, i) {
+                      final data = docs[i].data() as Map<String, dynamic>;
+                      final fileName = data['name'] ?? 'Unnamed';
+                      final url = data['url'] ?? '';
+                      final owner = data['ownerEmail'] ?? 'Unknown';
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: const Icon(Icons.folder_shared, color: Colors.green),
+                          title: Text(fileName),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${(data['size'] / 1024).toStringAsFixed(1)} KB'),
+                              Text('Shared by: $owner',
+                                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                            ],
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.download),
+                            onPressed: () => _downloadFile(url, fileName, context),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Future<void> _share(BuildContext context, String docId) async {
+    final input = TextEditingController();
+    final emails = await showDialog<List<String>>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Share document'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter emails (comma-separated).'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: input,
+              decoration: const InputDecoration(
+                labelText: 'Emails',
+                hintText: 'email1@example.com, email2@example.com',
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final list = input.text
+                  .split(',')
+                  .map((e) => e.trim().toLowerCase())
+                  .where((e) => e.isNotEmpty)
+                  .toSet()
+                  .toList();
+              Navigator.pop(ctx, list);
+            },
+            child: const Text('Share'),
+          ),
+        ],
+      ),
+    );
+    if (emails == null || emails.isEmpty) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('files')
+          .doc(docId)
+          .update({'sharedWith': FieldValue.arrayUnion(emails)});
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Shared with: ${emails.join(', ')}')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to share: $e')));
+      }
+    }
+  }
+
+  Future<void> _unshare(BuildContext context, String docId, String email) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('files')
+          .doc(docId)
+          .update({'sharedWith': FieldValue.arrayRemove([email])});
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Unshared from: $email')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to unshare: $e')));
+      }
+    }
   }
 }
