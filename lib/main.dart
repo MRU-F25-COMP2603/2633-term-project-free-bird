@@ -8,6 +8,9 @@ import 'hotel_bookings_page.dart';
 import 'documents_page.dart';
 import 'translation_page.dart';
 import 'settings_page.dart';
+import 'package:provider/provider.dart';
+import 'theme_provider.dart';
+
 
 const FirebaseOptions windows = FirebaseOptions(
   apiKey: 'AIzaSyCoE-xYJf3OsKpZBrYgLFXCbQIm4aAHH0c',
@@ -29,46 +32,57 @@ void main() async {
   } catch (e) {
     debugPrint('Failed to initialize Firebase: $e');
   }
-  runApp(const MyApp());
+  runApp(ChangeNotifierProvider(
+    create: (_) => ThemeProvider(),
+    child: const MyApp(),
+  ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
+    // Access theme provider
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Free Bird',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
+
+      // 🌙 Enable Light + Dark themes
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+
       routes: {
         '/home': (context) => const MyHomePage(),
       },
+
+      // 🔥 Authentication-based routing
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          // Show loading indicator while checking auth state
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
+              body: Center(child: CircularProgressIndicator()),
             );
           }
-          
-          // If user is logged in, show home page
+
+          // User logged in → Home
           if (snapshot.hasData) {
             return const MyHomePage();
           }
-          
-          // Otherwise, show login page
+
+          // User not logged in → Login
           return const LoginPage();
         },
       ),
     );
   }
 }
+
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -112,7 +126,7 @@ class _MyHomePageState extends State<MyHomePage> {
             // Define icons for each page
             final icons = [
               Icons.flight,           // Page 1: Flights
-              Icons.home,             // Page 2: Home/placeholder
+              Icons.hotel,            // Page 2: Hotel
               Icons.folder,           // Page 3: Documents
               Icons.translate,        // Page 4: Translation & Currency
               Icons.settings,         // Page 5: Settings/placeholder
