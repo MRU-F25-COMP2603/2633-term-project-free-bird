@@ -78,7 +78,17 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  bool _useNewNavigation = false;
+  int _currentIndex = 0;
 
+    final List<Widget> _pages = [
+    const DataOverviewPage(),    // Page 0: Data Overview
+    const FlightInputPage(),     // Page 1: Flights
+    const HotelBookingsPage(),   // Page 2: Hotel Bookings
+    const DocumentsPage(),       // Page 3: Documents
+    const TranslationPage(),     // Page 4: Translation & Currency
+  ];
+  
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
   }
