@@ -10,9 +10,11 @@ Dependencies: Visual Studio Code, Visual Studio, Flutter, Dart, Windows
 
 How to run: Clone the repository into Visual Studio Code, open a new terminal and type "flutter run"
 
+Features: Account creation and usage, flight data storing, document storing, language translation, currency conversion
+
 Troubleshooting: delete "pubspec.lock" and type "flutter pub get" in the terminal. Type "flutter doctor" if this does not fix the issue.
 
-Bug reportiong: Create an issue within Github
+Bug reporting: Create an issue within Github
 
 ---Developer Guide---
 
