@@ -1,9 +1,11 @@
 Communication Channel: https://discord.gg/Dr7jU4at
+
 Shared Google Folder: https://drive.google.com/drive/folders/1nGN5eugkkD60EATT8uIWbhy8Uw9e3N7E
 
 Joshua Martenson, Zayn Khan, Mohamad Hamade, Abhu Sharma, Alexander Ayeye
 
 ---User Guide---
+
 Dependencies: Visual Studio Code, Visual Studio, Flutter, Dart, Windows
 
 How to run: Clone the repository into Visual Studio Code, open a new terminal and type "flutter run"
