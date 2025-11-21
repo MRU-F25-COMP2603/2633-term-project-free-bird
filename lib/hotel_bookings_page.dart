@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HotelBookingsPage extends StatefulWidget {
   const HotelBookingsPage({super.key});
@@ -8,429 +10,467 @@ class HotelBookingsPage extends StatefulWidget {
 }
 
 class _HotelBookingsPageState extends State<HotelBookingsPage> {
-  final TextEditingController _destinationController = TextEditingController();
-  DateTimeRange? _dateRange;
-  int _guests = 1;
+  final TextEditingController _hotelNameController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _checkInController = TextEditingController();
+  final TextEditingController _checkOutController = TextEditingController();
+
+  DateTime? _checkInDate;
+  DateTime? _checkOutDate;
+  bool _isAddingBooking = false;
 
   @override
   void dispose() {
-    _destinationController.dispose();
+    _hotelNameController.dispose();
+    _addressController.dispose();
+    _checkInController.dispose();
+    _checkOutController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickDateRange() async {
-    final now = DateTime.now();
-    final picked = await showDateRangePicker(
+  Future<void> _selectCheckInDate() async {
+    final picked = await showDatePicker(
       context: context,
-      firstDate: now,
-      lastDate: DateTime(now.year + 2),
-      initialDateRange:
-          _dateRange ??
-          DateTimeRange(
-            start: now.add(const Duration(days: 1)),
-            end: now.add(const Duration(days: 4)),
-          ),
-      helpText: 'Select stay dates',
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
     );
-
     if (picked != null) {
       setState(() {
-        _dateRange = picked;
+        _checkInDate = picked;
+        _checkInController.text =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       });
     }
   }
 
-  void _changeGuests(int delta) {
-    setState(() {
-      _guests = ((_guests + delta).clamp(1, 10) as int);
-    });
-  }
-
-  void _onSearch() {
-    final destination = _destinationController.text.trim();
-    final snackBar = SnackBar(
-      content: Text(
-        destination.isEmpty
-            ? 'Choose a destination to start searching.'
-            : 'Searching hotels in $destination for $_guests guest(s)...',
-      ),
+  Future<void> _selectCheckOutDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _checkInDate ?? DateTime.now(),
+      firstDate: _checkInDate ?? DateTime(2020),
+      lastDate: DateTime(2030),
     );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    if (picked != null) {
+      setState(() {
+        _checkOutDate = picked;
+        _checkOutController.text =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      });
+    }
   }
 
-  String get _dateLabel {
-    if (_dateRange == null) return 'Select dates';
-    final start = _dateRange!.start;
-    final end = _dateRange!.end;
-    return '${start.month}/${start.day}/${start.year} - '
-        '${end.month}/${end.day}/${end.year}';
+  Future<void> _addBooking() async {
+    final hotelName = _hotelNameController.text.trim();
+    final address = _addressController.text.trim();
+    final checkIn = _checkInController.text.trim();
+    final checkOut = _checkOutController.text.trim();
+
+    if (hotelName.isEmpty || address.isEmpty || checkIn.isEmpty || checkOut.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Please fill in all fields')));
+      return;
+    }
+
+    setState(() => _isAddingBooking = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final data = {
+        'userId': user.uid,
+        'ownerEmail': user.email ?? 'no-email@unknown.com',
+        'sharedWith': <String>[],
+        'hotelName': hotelName,
+        'address': address,
+        'checkIn': checkIn,
+        'checkOut': checkOut,
+        'addedAt': FieldValue.serverTimestamp(),
+      };
+
+      await FirebaseFirestore.instance.collection('hotels').add(data);
+
+      _hotelNameController.clear();
+      _addressController.clear();
+      _checkInController.clear();
+      _checkOutController.clear();
+      _checkInDate = null;
+      _checkOutDate = null;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Hotel booking added successfully!'),
+          backgroundColor: Colors.green,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding booking: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isAddingBooking = false);
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final lavender = theme.colorScheme.inversePrimary;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hotel Bookings'),
-        backgroundColor: lavender,
-      ),
-      body: Container(
-        color: lavender.withOpacity(0.08),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Plan your stay',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Search and compare hotels for your next trip.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[700],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Destination field
-                Text('Destination', style: theme.textTheme.labelLarge),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _destinationController,
-                  decoration: InputDecoration(
-                    hintText: 'City, landmark, or hotel name',
-                    prefixIcon: const Icon(Icons.location_on_outlined),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                // Dates + Guests cards
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: _InfoCard(
-                        title: 'Dates',
-                        subtitle: _dateLabel,
-                        icon: Icons.calendar_month_outlined,
-                        onTap: _pickDateRange,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: _GuestsCard(
-                        guests: _guests,
-                        onIncrement: () => _changeGuests(1),
-                        onDecrement: () => _changeGuests(-1),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // Search button
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.search),
-                    label: const Text('Search Hotels'),
-                    onPressed: _onSearch,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      textStyle: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Suggested hotels list (static mock data)
-                Text(
-                  'Popular nearby stays',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const _HotelCard(
-                  name: 'Lavender Sky Hotel',
-                  location: 'Downtown • 0.8 km from center',
-                  pricePerNight: 142,
-                  rating: 4.6,
-                  tags: ['Free Wi-Fi', 'Breakfast included'],
-                ),
-                const SizedBox(height: 10),
-                const _HotelCard(
-                  name: 'Free Bird Suites',
-                  location: 'Near airport • 2.3 km away',
-                  pricePerNight: 118,
-                  rating: 4.3,
-                  tags: ['Airport shuttle', '24/7 desk'],
-                ),
-                const SizedBox(height: 10),
-                const _HotelCard(
-                  name: 'City Lights Inn',
-                  location: 'Riverside • 1.1 km from center',
-                  pricePerNight: 165,
-                  rating: 4.8,
-                  tags: ['Great view', 'Flexible cancellation'],
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  Future<void> _deleteBooking(String bookingId) async {
+    try {
+      await FirebaseFirestore.instance.collection('hotels').doc(bookingId).delete();
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Booking removed successfully')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error removing booking: $e')));
+      }
+    }
   }
-}
 
-class _InfoCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  const _InfoCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Icon(icon, size: 24, color: theme.colorScheme.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  Future<void> _unshareBooking(String bookingId, String email) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('hotels')
+          .doc(bookingId)
+          .update({'sharedWith': FieldValue.arrayRemove([email])});
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Unshared from: $email')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to unshare: $e')));
+      }
+    }
   }
-}
 
-class _GuestsCard extends StatelessWidget {
-  final int guests;
-  final VoidCallback onIncrement;
-  final VoidCallback onDecrement;
-
-  const _GuestsCard({
-    required this.guests,
-    required this.onIncrement,
-    required this.onDecrement,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min, // 👈 shrink-wrap height
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Future<void> _shareBooking(String bookingId) async {
+    final input = TextEditingController();
+    final emails = await showDialog<List<String>>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Share booking'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Guests',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: Colors.grey[700],
+            const Text('Enter emails (comma-separated).'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: input,
+              decoration: const InputDecoration(
+                labelText: 'Emails',
+                hintText: 'email1@example.com, email2@example.com',
               ),
-            ),
-            const SizedBox(height: 8), // 👈 use fixed spacing instead of Spacer
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '$guests',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline),
-                      onPressed: onDecrement,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      onPressed: onIncrement,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-              ],
+              keyboardType: TextInputType.emailAddress,
             ),
           ],
         ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final list = input.text
+                  .split(',')
+                  .map((e) => e.trim().toLowerCase())
+                  .where((e) => e.isNotEmpty)
+                  .toSet()
+                  .toList();
+              Navigator.pop(ctx, list);
+            },
+            child: const Text('Share'),
+          ),
+        ],
       ),
     );
+    if (emails == null || emails.isEmpty) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('hotels')
+          .doc(bookingId)
+          .update({'sharedWith': FieldValue.arrayUnion(emails)});
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Shared with: ${emails.join(', ')}')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to share: $e')));
+      }
+    }
   }
-}
-
-class _HotelCard extends StatelessWidget {
-  final String name;
-  final String location;
-  final int pricePerNight;
-  final double rating;
-  final List<String> tags;
-
-  const _HotelCard({
-    required this.name,
-    required this.location,
-    required this.pricePerNight,
-    required this.rating,
-    required this.tags,
-  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final lavender = theme.colorScheme.inversePrimary.withOpacity(0.2);
-
-    return Material(
-      elevation: 1,
-      borderRadius: BorderRadius.circular(16),
-      color: Colors.white,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          // Later you can navigate to a details screen here.
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Placeholder image box
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: lavender,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.hotel, size: 32),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Hotel Bookings'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                    const Text('Add New Booking',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _hotelNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Hotel Name',
+                        border: OutlineInputBorder(),
+                        hintText: 'Grand Hotel',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      location,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[700],
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _addressController,
+                      decoration: const InputDecoration(
+                        labelText: 'Address',
+                        border: OutlineInputBorder(),
+                        hintText: '123 Main St, City, Country',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: -4,
-                      children: tags
-                          .map(
-                            (t) => Chip(
-                              label: Text(
-                                t,
-                                style: const TextStyle(fontSize: 11),
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                            ),
-                          )
-                          .toList(),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _checkInController,
+                          decoration: const InputDecoration(
+                            labelText: 'Check-in Date',
+                            border: OutlineInputBorder(),
+                            hintText: 'Select date',
+                            suffixIcon: Icon(Icons.calendar_today),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          readOnly: true,
+                          onTap: _selectCheckInDate,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _checkOutController,
+                          decoration: const InputDecoration(
+                            labelText: 'Check-out Date',
+                            border: OutlineInputBorder(),
+                            hintText: 'Select date',
+                            suffixIcon: Icon(Icons.calendar_today),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          readOnly: true,
+                          onTap: _selectCheckOutDate,
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _isAddingBooking ? null : _addBooking,
+                      child: _isAddingBooking
+                          ? const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                                SizedBox(width: 8),
+                                Text('Adding...'),
+                              ],
+                            )
+                          : const Text('Add Booking'),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.star, size: 18, color: Colors.amber),
-                      const SizedBox(width: 2),
-                      Text(
-                        rating.toStringAsFixed(1),
-                        style: theme.textTheme.bodyMedium,
+            ),
+
+            const SizedBox(height: 12),
+            const Text('Your Bookings',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('hotels')
+                    .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  var bookings = snapshot.data?.docs ?? [];
+                  bookings.sort((a, b) {
+                    final aTime = (a.data() as Map<String, dynamic>)['addedAt'] as Timestamp?;
+                    final bTime = (b.data() as Map<String, dynamic>)['addedAt'] as Timestamp?;
+                    if (aTime == null && bTime == null) return 0;
+                    if (aTime == null) return 1;
+                    if (bTime == null) return -1;
+                    return bTime.compareTo(aTime);
+                  });
+                  if (bookings.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No bookings added yet.\nAdd your first booking above!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '\$$pricePerNight',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    '/night',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
+                    );
+                  }
+                  return ListView.builder(
+                    itemCount: bookings.length,
+                    itemBuilder: (context, i) {
+                      final doc = bookings[i];
+                      final b = doc.data() as Map<String, dynamic>;
+                      final shared = (b['sharedWith'] as List?)?.cast<String>() ?? const [];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: Colors.purple,
+                            child: Icon(Icons.hotel, color: Colors.white),
+                          ),
+                          title: Text('${b['hotelName']}',
+                              style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${b['address']}'),
+                              Text('${b['checkIn']} → ${b['checkOut']}'),
+                              if (shared.isNotEmpty)
+                                Wrap(
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  children: [
+                                    const Text('Shared with: ',
+                                        style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                    ...shared.map((email) => Chip(
+                                          label: Text(email, style: const TextStyle(fontSize: 11)),
+                                          deleteIcon: const Icon(Icons.close, size: 16),
+                                          onDeleted: () => _unshareBooking(doc.id, email),
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                                          visualDensity: VisualDensity.compact,
+                                        )),
+                                  ],
+                                ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.share, color: Colors.teal),
+                                tooltip: 'Share',
+                                onPressed: () => _shareBooking(doc.id),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _deleteBooking(doc.id),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+
+            const SizedBox(height: 16),
+            const Text('Shared Bookings',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+
+            SizedBox(
+              height: 260,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('hotels')
+                    .where(
+                      'sharedWith',
+                      arrayContains: FirebaseAuth.instance.currentUser?.email?.toLowerCase(),
+                    )
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  var bookings = snapshot.data?.docs ?? [];
+                  bookings.sort((a, b) {
+                    final aTime = (a.data() as Map<String, dynamic>)['addedAt'] as Timestamp?;
+                    final bTime = (b.data() as Map<String, dynamic>)['addedAt'] as Timestamp?;
+                    if (aTime == null && bTime == null) return 0;
+                    if (aTime == null) return 1;
+                    if (bTime == null) return -1;
+                    return bTime.compareTo(aTime);
+                  });
+                  if (bookings.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No shared bookings yet.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    itemCount: bookings.length,
+                    itemBuilder: (context, i) {
+                      final doc = bookings[i];
+                      final b = doc.data() as Map<String, dynamic>;
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: Colors.orange,
+                            child: Icon(Icons.hotel_outlined, color: Colors.white),
+                          ),
+                          title: Text('${b['hotelName']}',
+                              style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${b['address']}'),
+                              Text('${b['checkIn']} → ${b['checkOut']}'),
+                              Text(
+                                'Shared by: ${b['ownerEmail'] ?? 'Unknown'}',
+                                style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

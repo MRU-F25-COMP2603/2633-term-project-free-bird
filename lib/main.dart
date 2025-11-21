@@ -26,8 +26,7 @@ void main() async {
   try {
     await Firebase.initializeApp(options: windows);
     
-    // IMPORTANT: Sign out any existing user on app startup
-    // This ensures the app always starts at the login page
+    // Always start fresh - sign out any existing user
     await FirebaseAuth.instance.signOut();
   } catch (e) {
     debugPrint('Failed to initialize Firebase: $e');
@@ -44,14 +43,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Access theme provider
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Free Bird',
 
-      // 🌙 Enable Light + Dark themes
+      // Light and dark theme support
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
@@ -60,22 +58,23 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const MyHomePage(),
       },
 
-      // 🔥 Authentication-based routing
+      // Show login page if not authenticated, otherwise show home
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
+          // Show loading spinner while checking auth state
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
           }
 
-          // User logged in → Home
+          // User is logged in, show home page
           if (snapshot.hasData) {
             return const MyHomePage();
           }
 
-          // User not logged in → Login
+          // No user logged in, show login page
           return const LoginPage();
         },
       ),
@@ -123,13 +122,13 @@ class _MyHomePageState extends State<MyHomePage> {
         height: buttonSize,
         child: Row(
           children: List.generate(5, (index) {
-            // Define icons for each page
+            // Icon for each page in the bottom nav
             final icons = [
-              Icons.flight,           // Page 1: Flights
-              Icons.hotel,            // Page 2: Hotel
-              Icons.folder,           // Page 3: Documents
-              Icons.translate,        // Page 4: Translation & Currency
-              Icons.settings,         // Page 5: Settings/placeholder
+              Icons.flight,
+              Icons.hotel,
+              Icons.folder,
+              Icons.translate,
+              Icons.settings,
             ];
             
             return SizedBox(
