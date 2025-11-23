@@ -8,6 +8,7 @@ import 'hotel_bookings_page.dart';
 import 'documents_page.dart';
 import 'translation_page.dart';
 import 'settings_page.dart';
+import 'flight_overview.dart'; // ADDED IMPORT FOR FLIGHT OVERVIEW
 
 const FirebaseOptions windows = FirebaseOptions(
   apiKey: 'AIzaSyCoE-xYJf3OsKpZBrYgLFXCbQIm4aAHH0c',
@@ -78,17 +79,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final bool _useNewNavigation = false;
-  final int _currentIndex = 0;
 
-    final List<Widget> _pages = [
-    const DataOverviewPage(),    // Page 0: Data Overview
-    const FlightInputPage(),     // Page 1: Flights
-    const HotelBookingsPage(),   // Page 2: Hotel Bookings
-    const DocumentsPage(),       // Page 3: Documents
-    const TranslationPage(),     // Page 4: Translation & Currency
-  ];
-  
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
   }
@@ -110,11 +101,10 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const Expanded(child: SizedBox.shrink()),
-        ],
-      ),
+     
+      // REPLACED EMPTY BODY WITH FLIGHT OVERVIEW AS MAIN SCREEN
+      body: const DataOverviewPage(),
+      
       bottomNavigationBar: SizedBox(
         height: buttonSize,
         child: Row(

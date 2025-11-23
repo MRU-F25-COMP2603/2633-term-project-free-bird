@@ -95,7 +95,7 @@ class DataOverviewPage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Documents Summary (unchanged)
+          // Documents Summary 
           _buildSectionHeader('Documents'),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -131,7 +131,7 @@ class DataOverviewPage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Quick Stats (unchanged)
+          // Quick Stats 
           _buildSectionHeader('Quick Stats'),
           Row(
             children: [
@@ -201,7 +201,7 @@ class DataOverviewPage extends StatelessWidget {
 
               return Card(
                 child: Padding(
-                  const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(16.0),
                   child: Column(
                     children: recentFlights.map((doc) {
                       final flight = doc.data() as Map<String, dynamic>;
@@ -254,7 +254,7 @@ class DataOverviewPage extends StatelessWidget {
   }) {
     return Card(
       child: Padding(
-        const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.0),
         child: Row(
           children: [
             Container(
@@ -311,7 +311,7 @@ class DataOverviewPage extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(16.0),
           child: Column(
             children: [
               Icon(icon, size: 32, color: Colors.blue),
@@ -335,7 +335,7 @@ class DataOverviewPage extends StatelessWidget {
   Widget _buildRecentFlights(List<QueryDocumentSnapshot> flights) {
     return Card(
       child: Padding(
-        const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
