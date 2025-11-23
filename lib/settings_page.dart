@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:provider/provider.dart';    
-import 'theme_provider.dart';               
+import 'package:provider/provider.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
+import 'theme_provider.dart';
+import 'text_scale_provider.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -13,9 +15,11 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _darkMode = false;
   bool _notifications = true;
   String _language = "English";
+
+  bool _ttsEnabled = false;
+  final FlutterTts tts = FlutterTts();
 
   final user = FirebaseAuth.instance.currentUser;
 
@@ -25,19 +29,16 @@ class _SettingsPageState extends State<SettingsPage> {
     _loadPreferences();
   }
 
+  // ---------------------------------------------------------
+  // LOAD / SAVE PREFERENCES
+  // ---------------------------------------------------------
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _darkMode = prefs.getBool('darkMode') ?? false;
+      _ttsEnabled = prefs.getBool('ttsEnabled') ?? false;
       _notifications = prefs.getBool('notifications') ?? true;
       _language = prefs.getString('language') ?? "English";
     });
-  }
-
-  Future<void> _updateDarkMode(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('darkMode', value);
-    setState(() => _darkMode = value);
   }
 
   Future<void> _updateNotifications(bool value) async {
@@ -53,6 +54,26 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => _language = value);
   }
 
+  Future<void> _updateTtsEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('ttsEnabled', value);
+    setState(() => _ttsEnabled = value);
+  }
+
+  // ---------------------------------------------------------
+  // TEXT-TO-SPEECH FUNCTION
+  // ---------------------------------------------------------
+  Future<void> speak(String text) async {
+    if (!_ttsEnabled) return;
+
+    await tts.setLanguage("en-US");
+    await tts.setSpeechRate(0.5);
+    await tts.speak(text);
+  }
+
+  // ---------------------------------------------------------
+  // LOGOUT
+  // ---------------------------------------------------------
   void _logout() async {
     await FirebaseAuth.instance.signOut();
     if (mounted) {
@@ -60,8 +81,13 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  // ---------------------------------------------------------
+  // UI
+  // ---------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    final textScale = Provider.of<TextScaleProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -70,10 +96,9 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-
-          // -----------------------------------------------------------
+          // ---------------------------------------------------------
           // USER INFO CARD
-          // -----------------------------------------------------------
+          // ---------------------------------------------------------
           Card(
             elevation: 2,
             shape: RoundedRectangleBorder(
@@ -117,24 +142,63 @@ class _SettingsPageState extends State<SettingsPage> {
 
           const SizedBox(height: 20),
 
-          // -----------------------------------------------------------
+          // ---------------------------------------------------------
           // DARK MODE TOGGLE
-          // -----------------------------------------------------------
+          // ---------------------------------------------------------
           SwitchListTile(
             title: const Text("Dark Mode"),
             value: context.watch<ThemeProvider>().isDarkMode,
             onChanged: (value) {
-              // Update theme globally
               context.read<ThemeProvider>().toggleTheme(value);
-
-              _updateDarkMode(value);
             },
             secondary: const Icon(Icons.dark_mode),
           ),
 
-          // -----------------------------------------------------------
+          // ---------------------------------------------------------
+          // TEXT SIZE / MAGNIFICATION
+          // ---------------------------------------------------------
+          ListTile(
+            leading: const Icon(Icons.text_fields),
+            title: const Text("Text Size"),
+            subtitle: Slider(
+              value: textScale.scale,
+              min: 0.8,
+              max: 1.6,
+              divisions: 8,
+              label: textScale.scale.toStringAsFixed(1),
+              onChanged: (value) => textScale.setScale(value),
+            ),
+          ),
+
+          // ---------------------------------------------------------
+          // TEXT-TO-SPEECH TOGGLE
+          // ---------------------------------------------------------
+          SwitchListTile(
+            title: const Text("Text-to-Speech"),
+            value: _ttsEnabled,
+            onChanged: _updateTtsEnabled,
+            secondary: const Icon(Icons.record_voice_over),
+          ),
+
+          // SPEAK SCREEN BUTTON
+          if (_ttsEnabled)
+            ListTile(
+              leading: const Icon(Icons.volume_up),
+              title: const Text("Speak Screen"),
+              onTap: () {
+                speak(
+                  "Settings. Dark mode. Text size. Text to speech. "
+                  "Language. Notifications. "
+                  "About this app. Version 1.0. FreeBird Travel Companion App.",
+                );
+              },
+            ),
+
+          const SizedBox(height: 12),
+
+          // ---------------------------------------------------------
           // LANGUAGE DROPDOWN
-          // -----------------------------------------------------------
+          // ---------------------------------------------------------
           ListTile(
             leading: const Icon(Icons.language),
             title: const Text("Language"),
@@ -149,9 +213,9 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
 
-          // -----------------------------------------------------------
+          // ---------------------------------------------------------
           // NOTIFICATIONS TOGGLE
-          // -----------------------------------------------------------
+          // ---------------------------------------------------------
           SwitchListTile(
             title: const Text("Notifications"),
             value: _notifications,
@@ -161,9 +225,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
           const SizedBox(height: 20),
 
-          // -----------------------------------------------------------
-          // ABOUT + VERSION CARD
-          // -----------------------------------------------------------
+          // ---------------------------------------------------------
+          // ABOUT SECTION
+          // ---------------------------------------------------------
           Card(
             elevation: 2,
             shape: RoundedRectangleBorder(
@@ -176,16 +240,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   const Text(
                     "About This App",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      const Text("Version: ",
-                          style: TextStyle(fontSize: 16)),
+                      const Text("Version: ", style: TextStyle(fontSize: 16)),
                       Text(
                         "1.0.0",
                         style: TextStyle(
@@ -212,9 +272,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
           const SizedBox(height: 20),
 
-          // -----------------------------------------------------------
+          // ---------------------------------------------------------
           // LOGOUT BUTTON
-          // -----------------------------------------------------------
+          // ---------------------------------------------------------
           ElevatedButton(
             onPressed: _logout,
             style: ElevatedButton.styleFrom(
@@ -228,7 +288,7 @@ class _SettingsPageState extends State<SettingsPage> {
               "Log Out",
               style: TextStyle(fontSize: 16, color: Colors.white),
             ),
-          )
+          ),
         ],
       ),
     );

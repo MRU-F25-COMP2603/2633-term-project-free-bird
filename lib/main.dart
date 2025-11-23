@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'login_page.dart';
 import 'flight_tracker_page.dart';
 import 'hotel_bookings_page.dart';
 import 'documents_page.dart';
 import 'translation_page.dart';
 import 'settings_page.dart';
+
 import 'package:provider/provider.dart';
 import 'theme_provider.dart';
+import 'text_scale_provider.dart';
 
-
+/// Firebase Options for Windows
 const FirebaseOptions windows = FirebaseOptions(
   apiKey: 'AIzaSyCoE-xYJf3OsKpZBrYgLFXCbQIm4aAHH0c',
   appId: '1:953042776685:web:695a3c3d5157c373a94564',
@@ -25,16 +28,21 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await Firebase.initializeApp(options: windows);
-    
-    // Always start fresh - sign out any existing user
+
+    /// Start app fresh by signing out any previous user
     await FirebaseAuth.instance.signOut();
   } catch (e) {
-    debugPrint('Failed to initialize Firebase: $e');
+    debugPrint('Firebase initialization failed: $e');
   }
-  runApp(ChangeNotifierProvider(
-    create: (_) => ThemeProvider(),
-    child: const MyApp(),
-  ),
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => TextScaleProvider()),
+      ],
+      child: const MyApp(),
+    ),
   );
 }
 
@@ -44,44 +52,42 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final textScale = Provider.of<TextScaleProvider>(context).scale;
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Free Bird',
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaleFactor: textScale),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Free Bird',
 
-      // Light and dark theme support
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
-      routes: {
-        '/home': (context) => const MyHomePage(),
-      },
-
-      // Show login page if not authenticated, otherwise show home
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          // Show loading spinner while checking auth state
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          // User is logged in, show home page
-          if (snapshot.hasData) {
-            return const MyHomePage();
-          }
-
-          // No user logged in, show login page
-          return const LoginPage();
+        routes: {
+          '/home': (context) => const MyHomePage(),
         },
+
+        home: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            if (snapshot.hasData) {
+              return const MyHomePage();
+            }
+
+            return const LoginPage();
+          },
+        ),
       ),
     );
   }
 }
-
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -91,7 +97,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
   }
@@ -114,15 +119,14 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       body: Column(
-        children: [
-          const Expanded(child: SizedBox.shrink()),
+        children: const [
+          Expanded(child: SizedBox.shrink()),
         ],
       ),
       bottomNavigationBar: SizedBox(
         height: buttonSize,
         child: Row(
           children: List.generate(5, (index) {
-            // Icon for each page in the bottom nav
             final icons = [
               Icons.flight,
               Icons.hotel,
@@ -130,7 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
               Icons.translate,
               Icons.settings,
             ];
-            
+
             return SizedBox(
               width: screenWidth / 5,
               height: buttonSize,
