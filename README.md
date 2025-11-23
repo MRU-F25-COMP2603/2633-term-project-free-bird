@@ -29,3 +29,8 @@ How to test software: All tests are run when the program is run and when any pul
 How to add new tests: Refer to the "test" folder and add any given test case into it's relevant file referring to the documentation provided in them.
 
 How to build a release of the software: Simply build a release within GitHub, all other tasks are automated.
+
+--Bug Reporting--
+
+Found a bug? Please help us improve by reporting it in the "Issues" tab in our repository
+
