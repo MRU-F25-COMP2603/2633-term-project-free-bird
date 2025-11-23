@@ -78,8 +78,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  bool _useNewNavigation = false;
-  int _currentIndex = 0;
+  final bool _useNewNavigation = false;
+  final int _currentIndex = 0;
 
     final List<Widget> _pages = [
     const DataOverviewPage(),    // Page 0: Data Overview

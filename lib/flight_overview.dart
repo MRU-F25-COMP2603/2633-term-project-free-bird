@@ -14,7 +14,7 @@ class DataOverviewPage extends StatelessWidget {
         title: const Text('Data Overview'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: userId == null 
+      body: userId == null
           ? const Center(child: Text('Please log in to view your data'))
           : _buildOverviewContent(userId),
     );
@@ -26,7 +26,8 @@ class DataOverviewPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Welcome header
+
+          // Welcome Header
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -35,16 +36,15 @@ class DataOverviewPage extends StatelessWidget {
                 children: [
                   Text(
                     'Your Travel Dashboard',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
+                      fontSize: 22,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Overview of all your travel data',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -53,7 +53,7 @@ class DataOverviewPage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Flights Summary
+          //  Flights Summary 
           _buildSectionHeader('Flights'),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -83,7 +83,7 @@ class DataOverviewPage extends StatelessWidget {
                     subtitle: 'Flights tracked',
                     color: Colors.blue,
                   ),
-                  
+
                   if (recentFlights.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     _buildRecentFlights(recentFlights),
@@ -95,7 +95,7 @@ class DataOverviewPage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Documents Summary
+          // Documents Summary (unchanged)
           _buildSectionHeader('Documents'),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -131,7 +131,7 @@ class DataOverviewPage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Quick Stats
+          // Quick Stats (unchanged)
           _buildSectionHeader('Quick Stats'),
           Row(
             children: [
@@ -139,12 +139,7 @@ class DataOverviewPage extends StatelessWidget {
                 child: _buildStatCard(
                   icon: Icons.flight_takeoff,
                   value: 'Flights',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const FlightInputPage()),
-                    );
-                  },
+                  onTap: () {},
                 ),
               ),
               const SizedBox(width: 12),
@@ -152,12 +147,7 @@ class DataOverviewPage extends StatelessWidget {
                 child: _buildStatCard(
                   icon: Icons.folder_open,
                   value: 'Documents',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DocumentsPage()),
-                    );
-                  },
+                  onTap: () {},
                 ),
               ),
               const SizedBox(width: 12),
@@ -165,12 +155,7 @@ class DataOverviewPage extends StatelessWidget {
                 child: _buildStatCard(
                   icon: Icons.translate,
                   value: 'Translate',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const TranslationPage()),
-                    );
-                  },
+                  onTap: () {},
                 ),
               ),
             ],
@@ -178,7 +163,7 @@ class DataOverviewPage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Recent Activity
+          // Recent Activity (unchanged)
           _buildSectionHeader('Recent Activity'),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -216,7 +201,7 @@ class DataOverviewPage extends StatelessWidget {
 
               return Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  const EdgeInsets.all(16.0),
                   child: Column(
                     children: recentFlights.map((doc) {
                       final flight = doc.data() as Map<String, dynamic>;
@@ -233,7 +218,6 @@ class DataOverviewPage extends StatelessWidget {
                           flight['date'] ?? '',
                           style: const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
-                        contentPadding: EdgeInsets.zero,
                       );
                     }).toList(),
                   ),
@@ -246,6 +230,7 @@ class DataOverviewPage extends StatelessWidget {
     );
   }
 
+  // Header widget
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -259,6 +244,7 @@ class DataOverviewPage extends StatelessWidget {
     );
   }
 
+  // Summary Card
   Widget _buildSummaryCard({
     required IconData icon,
     required String title,
@@ -268,7 +254,7 @@ class DataOverviewPage extends StatelessWidget {
   }) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        const EdgeInsets.all(16.0),
         child: Row(
           children: [
             Container(
@@ -314,6 +300,7 @@ class DataOverviewPage extends StatelessWidget {
     );
   }
 
+  // Stat Card
   Widget _buildStatCard({
     required IconData icon,
     required String value,
@@ -324,7 +311,7 @@ class DataOverviewPage extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          const EdgeInsets.all(16.0),
           child: Column(
             children: [
               Icon(icon, size: 32, color: Colors.blue),
@@ -344,10 +331,11 @@ class DataOverviewPage extends StatelessWidget {
     );
   }
 
+  // Recent Flights Overview
   Widget _buildRecentFlights(List<QueryDocumentSnapshot> flights) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -359,28 +347,26 @@ class DataOverviewPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
+
+            // List
             ...flights.map((doc) {
               final flight = doc.data() as Map<String, dynamic>;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  children: [
-                    const Icon(Icons.flight, size: 16, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${flight['flightNumber']} • ${flight['departureAirport']} → ${flight['arrivalAirport']}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    Text(
-                      flight['date'] ?? '',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
+              return ListTile(
+                leading: const Icon(Icons.flight, color: Colors.blue),
+                title: Text(
+                  '${flight['flightNumber']} - ${flight['airline']}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
+                subtitle: Text(
+                  '${flight['departureAirport']} → ${flight['arrivalAirport']}',
+                ),
+                trailing: Text(
+                  flight['date'] ?? '',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                contentPadding: EdgeInsets.zero,
               );
-            }),
+            }).toList(),
           ],
         ),
       ),
