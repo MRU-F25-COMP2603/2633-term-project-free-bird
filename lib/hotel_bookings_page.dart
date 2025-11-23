@@ -1,6 +1,176 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:math';
+
+/// ---------------------------------------------------------------------
+///  HOTEL OVERVIEW CARD (Ticket-style)
+/// ---------------------------------------------------------------------
+class HotelOverviewCard extends StatelessWidget {
+  final String name;
+  final String address;
+  final String checkIn;
+  final String checkOut;
+
+  const HotelOverviewCard({
+    super.key,
+    required this.name,
+    required this.address,
+    required this.checkIn,
+    required this.checkOut,
+  });
+
+  static final _rand = Random();
+
+  // Random status
+  static const _statuses = ["CONFIRMED", "CHECK-IN SOON", "CHECKED IN", "CANCELLED"];
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case "CHECK-IN SOON":
+        return Colors.orange;
+      case "CHECKED IN":
+        return Colors.blue;
+      case "CANCELLED":
+        return Colors.red;
+      default:
+        return Colors.green; // confirmed
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final status = _statuses[_rand.nextInt(_statuses.length)];
+    final room = 100 + _rand.nextInt(400);
+    final stars = 3 + _rand.nextInt(3); // 3–5 stars
+
+    // Convert dates for nights calculation
+    final inDate = DateTime.tryParse(checkIn) ?? DateTime.now();
+    final outDate = DateTime.tryParse(checkOut) ?? DateTime.now();
+    final nights = outDate.difference(inDate).inDays;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// TOP: Hotel name + stars
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                name,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              Row(
+                children: List.generate(
+                  stars,
+                  (_) => const Icon(Icons.star, color: Colors.amber, size: 20),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(address, style: const TextStyle(fontSize: 15, color: Colors.black87)),
+
+          const SizedBox(height: 16),
+
+          /// CHECK-IN / CHECK-OUT ROW
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Check-in", style: TextStyle(color: Colors.black54)),
+                    Text(checkIn, style: const TextStyle(fontSize: 16)),
+                  ]),
+              Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text("Check-out", style: TextStyle(color: Colors.black54)),
+                    Text(checkOut, style: const TextStyle(fontSize: 16)),
+                  ]),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          Text("Nights: $nights",
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+
+          const SizedBox(height: 16),
+
+          /// STATUS + ROOM
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _statusColor(status),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  status,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text("Room: $room"),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ---------------------------------------------------------------------
+///  AMENITIES BAR
+/// ---------------------------------------------------------------------
+
+class AmenitiesBar extends StatelessWidget {
+  const AmenitiesBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const amenities = [
+      {"icon": Icons.wifi, "label": "Wi-Fi"},
+      {"icon": Icons.free_breakfast, "label": "Breakfast"},
+      {"icon": Icons.pool, "label": "Pool"},
+      {"icon": Icons.fitness_center, "label": "Gym"},
+      {"icon": Icons.local_parking, "label": "Parking"},
+    ];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: amenities.map((a) {
+        return Column(
+          children: [
+            Icon(a["icon"] as IconData, color: Colors.blueAccent, size: 28),
+            const SizedBox(height: 4),
+            Text(a["label"] as String, style: const TextStyle(fontSize: 12)),
+          ],
+        );
+      }).toList(),
+    );
+  }
+}
+
+/// =====================================================================
+///  MAIN PAGE
+/// =====================================================================
 
 class HotelBookingsPage extends StatefulWidget {
   const HotelBookingsPage({super.key});
@@ -75,14 +245,11 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
     setState(() => _isAddingBooking = true);
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('User not authenticated');
-      }
+      if (user == null) throw Exception('User not authenticated');
 
       final data = {
         'userId': user.uid,
         'ownerEmail': user.email ?? 'no-email@unknown.com',
-        'sharedWith': <String>[],
         'hotelName': hotelName,
         'address': address,
         'checkIn': checkIn,
@@ -107,9 +274,8 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding booking: $e'), backgroundColor: Colors.red),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error adding booking: $e')));
       }
     } finally {
       if (mounted) setState(() => _isAddingBooking = false);
@@ -131,81 +297,6 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
     }
   }
 
-  Future<void> _unshareBooking(String bookingId, String email) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('hotels')
-          .doc(bookingId)
-          .update({'sharedWith': FieldValue.arrayRemove([email])});
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Unshared from: $email')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed to unshare: $e')));
-      }
-    }
-  }
-
-  Future<void> _shareBooking(String bookingId) async {
-    final input = TextEditingController();
-    final emails = await showDialog<List<String>>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Share booking'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Enter emails (comma-separated).'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: input,
-              decoration: const InputDecoration(
-                labelText: 'Emails',
-                hintText: 'email1@example.com, email2@example.com',
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              final list = input.text
-                  .split(',')
-                  .map((e) => e.trim().toLowerCase())
-                  .where((e) => e.isNotEmpty)
-                  .toSet()
-                  .toList();
-              Navigator.pop(ctx, list);
-            },
-            child: const Text('Share'),
-          ),
-        ],
-      ),
-    );
-    if (emails == null || emails.isEmpty) return;
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('hotels')
-          .doc(bookingId)
-          .update({'sharedWith': FieldValue.arrayUnion(emails)});
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Shared with: ${emails.join(', ')}')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed to share: $e')));
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -218,14 +309,17 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            /// ------------------ ADD NEW BOOKING FORM -------------------
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('Add New Booking',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Add New Booking',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _hotelNameController,
@@ -233,7 +327,6 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
                         labelText: 'Hotel Name',
                         border: OutlineInputBorder(),
                         hintText: 'Grand Hotel',
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -243,57 +336,43 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
                         labelText: 'Address',
                         border: OutlineInputBorder(),
                         hintText: '123 Main St, City, Country',
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Row(children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _checkInController,
-                          decoration: const InputDecoration(
-                            labelText: 'Check-in Date',
-                            border: OutlineInputBorder(),
-                            hintText: 'Select date',
-                            suffixIcon: Icon(Icons.calendar_today),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _checkInController,
+                            decoration: const InputDecoration(
+                              labelText: 'Check-in Date',
+                              border: OutlineInputBorder(),
+                              suffixIcon: Icon(Icons.calendar_today),
+                            ),
+                            readOnly: true,
+                            onTap: _selectCheckInDate,
                           ),
-                          readOnly: true,
-                          onTap: _selectCheckInDate,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _checkOutController,
-                          decoration: const InputDecoration(
-                            labelText: 'Check-out Date',
-                            border: OutlineInputBorder(),
-                            hintText: 'Select date',
-                            suffixIcon: Icon(Icons.calendar_today),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _checkOutController,
+                            decoration: const InputDecoration(
+                              labelText: 'Check-out Date',
+                              border: OutlineInputBorder(),
+                              suffixIcon: Icon(Icons.calendar_today),
+                            ),
+                            readOnly: true,
+                            onTap: _selectCheckOutDate,
                           ),
-                          readOnly: true,
-                          onTap: _selectCheckOutDate,
                         ),
-                      ),
-                    ]),
+                      ],
+                    ),
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: _isAddingBooking ? null : _addBooking,
                       child: _isAddingBooking
-                          ? const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                                SizedBox(width: 8),
-                                Text('Adding...'),
-                              ],
-                            )
+                          ? const CircularProgressIndicator(strokeWidth: 2)
                           : const Text('Add Booking'),
                     ),
                   ],
@@ -304,8 +383,9 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
             const SizedBox(height: 12),
             const Text('Your Bookings',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
 
+            /// ------------------ BOOKINGS LIST -------------------
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -313,155 +393,64 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
                     .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
                     .snapshots(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
-                  var bookings = snapshot.data?.docs ?? [];
-                  bookings.sort((a, b) {
-                    final aTime = (a.data() as Map<String, dynamic>)['addedAt'] as Timestamp?;
-                    final bTime = (b.data() as Map<String, dynamic>)['addedAt'] as Timestamp?;
-                    if (aTime == null && bTime == null) return 0;
-                    if (aTime == null) return 1;
-                    if (bTime == null) return -1;
-                    return bTime.compareTo(aTime);
-                  });
-                  if (bookings.isEmpty) {
+                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+                  final docs = snapshot.data!.docs;
+
+                  if (docs.isEmpty) {
                     return const Center(
                       child: Text(
-                        'No bookings added yet.\nAdd your first booking above!',
+                        'No bookings added yet.\nAdd one above!',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                        style: TextStyle(color: Colors.grey, fontSize: 16),
                       ),
                     );
                   }
+
                   return ListView.builder(
-                    itemCount: bookings.length,
-                    itemBuilder: (context, i) {
-                      final doc = bookings[i];
+                    itemCount: docs.length + 1, // +1 = overview + amenities
+                    itemBuilder: (context, index) {
+                      if (index == docs.length) {
+                        final b = docs.first.data() as Map<String, dynamic>;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 20),
+                            const Text(
+                              "Hotel Overview",
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 12),
+
+                            HotelOverviewCard(
+                              name: b['hotelName'],
+                              address: b['address'],
+                              checkIn: b['checkIn'],
+                              checkOut: b['checkOut'],
+                            ),
+
+                            /// AMENITIES ROW
+                            const AmenitiesBar(),
+                            const SizedBox(height: 30),
+                          ],
+                        );
+                      }
+
+                      final doc = docs[index];
                       final b = doc.data() as Map<String, dynamic>;
-                      final shared = (b['sharedWith'] as List?)?.cast<String>() ?? const [];
+
                       return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           leading: const CircleAvatar(
                             backgroundColor: Colors.purple,
                             child: Icon(Icons.hotel, color: Colors.white),
                           ),
-                          title: Text('${b['hotelName']}',
-                              style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('${b['address']}'),
-                              Text('${b['checkIn']} → ${b['checkOut']}'),
-                              if (shared.isNotEmpty)
-                                Wrap(
-                                  spacing: 4,
-                                  runSpacing: 4,
-                                  children: [
-                                    const Text('Shared with: ',
-                                        style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                    ...shared.map((email) => Chip(
-                                          label: Text(email, style: const TextStyle(fontSize: 11)),
-                                          deleteIcon: const Icon(Icons.close, size: 16),
-                                          onDeleted: () => _unshareBooking(doc.id, email),
-                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                                          visualDensity: VisualDensity.compact,
-                                        )),
-                                  ],
-                                ),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.share, color: Colors.teal),
-                                tooltip: 'Share',
-                                onPressed: () => _shareBooking(doc.id),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _deleteBooking(doc.id),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 16),
-            const Text('Shared Bookings',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-
-            SizedBox(
-              height: 260,
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('hotels')
-                    .where(
-                      'sharedWith',
-                      arrayContains: FirebaseAuth.instance.currentUser?.email?.toLowerCase(),
-                    )
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
-                  var bookings = snapshot.data?.docs ?? [];
-                  bookings.sort((a, b) {
-                    final aTime = (a.data() as Map<String, dynamic>)['addedAt'] as Timestamp?;
-                    final bTime = (b.data() as Map<String, dynamic>)['addedAt'] as Timestamp?;
-                    if (aTime == null && bTime == null) return 0;
-                    if (aTime == null) return 1;
-                    if (bTime == null) return -1;
-                    return bTime.compareTo(aTime);
-                  });
-                  if (bookings.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No shared bookings yet.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    );
-                  }
-                  return ListView.builder(
-                    itemCount: bookings.length,
-                    itemBuilder: (context, i) {
-                      final doc = bookings[i];
-                      final b = doc.data() as Map<String, dynamic>;
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: Colors.orange,
-                            child: Icon(Icons.hotel_outlined, color: Colors.white),
-                          ),
-                          title: Text('${b['hotelName']}',
-                              style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('${b['address']}'),
-                              Text('${b['checkIn']} → ${b['checkOut']}'),
-                              Text(
-                                'Shared by: ${b['ownerEmail'] ?? 'Unknown'}',
-                                style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
-                              ),
-                            ],
+                          title: Text("${b['hotelName']}"),
+                          subtitle: Text("${b['address']}\n${b['checkIn']} → ${b['checkOut']}"),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _deleteBooking(doc.id),
                           ),
                         ),
                       );
