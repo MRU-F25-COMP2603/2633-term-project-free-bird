@@ -9,6 +9,7 @@ import 'hotel_bookings_page.dart';
 import 'documents_page.dart';
 import 'translation_page.dart';
 import 'settings_page.dart';
+import 'flight_overview.dart'; // ADDED IMPORT FOR FLIGHT OVERVIEW
 
 import 'package:provider/provider.dart';
 import 'theme_provider.dart';
@@ -118,11 +119,10 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: Column(
-        children: const [
-          Expanded(child: SizedBox.shrink()),
-        ],
-      ),
+
+      // ✅ KEEP TEAMS HOMEPAGE UI
+      body: const DataOverviewPage(),
+
       bottomNavigationBar: SizedBox(
         height: buttonSize,
         child: Row(
