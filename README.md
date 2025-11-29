@@ -36,6 +36,7 @@ Before installation, ensure the following are installed:
 3. **Dart SDK**  
 4. **Visual Studio Code**
 5. **Visual Studio (Desktop development with C++)** ← *important requirement*
+6. **Nuget** (for TTS)
 
 Verify Flutter setup:
 ```bash
