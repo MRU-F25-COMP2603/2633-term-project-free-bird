@@ -8,18 +8,23 @@ class FirestoreService {
   static final _storage = FirebaseStorage.instance;
 
   static Future<void> uploadFile(File file, String name, int size, String? extension) async {
-    // Get current user ID
-    final userId = FirebaseAuth.instance.currentUser?.uid;
+    // Get current user
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid;
     if (userId == null) {
       throw Exception('User not authenticated');
     }
 
-    final fileRef = _storage.ref().child('uploads/$userId/${DateTime.now().millisecondsSinceEpoch}_$name');
+    final fileRef = _storage
+        .ref()
+        .child('uploads/$userId/${DateTime.now().millisecondsSinceEpoch}_$name');
     await fileRef.putFile(file);
     final url = await fileRef.getDownloadURL();
 
     await _filesRef.add({
       'userId': userId,
+      'ownerEmail': user?.email ?? 'unknown',
+      'sharedWith': <String>[],
       'name': name,
       'url': url,
       'storagePath': fileRef.fullPath,
@@ -39,6 +44,16 @@ class FirestoreService {
     // Files will be sorted client-side in the UI if needed
     return _filesRef
         .where('userId', isEqualTo: userId)
+        .snapshots();
+  }
+
+  static Stream<QuerySnapshot> getSharedFilesStream() {
+    final email = FirebaseAuth.instance.currentUser?.email?.toLowerCase();
+    if (email == null || email.isEmpty) {
+      return const Stream.empty();
+    }
+    return _filesRef
+        .where('sharedWith', arrayContains: email)
         .snapshots();
   }
 
