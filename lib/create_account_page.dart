@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'language_provider.dart';
+import 'translations.dart';
 
 class CreateAccountPage extends StatefulWidget {
   const CreateAccountPage({super.key});
@@ -80,6 +83,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 
   @override
   Widget build(BuildContext context) {
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: Center(
@@ -158,7 +163,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Create Account', style: TextStyle(fontSize: 16)),
+                        : Text(AppTranslations.get('create_account', language), style: const TextStyle(fontSize: 16)),
                   ),
                 ),
                 if (_errorMessage != null)
@@ -175,9 +180,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   onTap: () {
                     Navigator.pop(context);
                   },
-                  child: const Text(
-                    'Already have an account? Log in',
-                    style: TextStyle(
+                  child: Text(
+                    AppTranslations.get('already_have_account', language),
+                    style: const TextStyle(
                       color: Colors.blue,
                       decoration: TextDecoration.underline,
                     ),

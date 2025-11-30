@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import 'dart:math';
+import 'language_provider.dart';
+import 'translations.dart';
 
 /// ---------------------------------------------------------------------
 ///  HOTEL OVERVIEW CARD (Ticket-style)
@@ -237,8 +240,11 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
     final checkOut = _checkOutController.text.trim();
 
     if (hotelName.isEmpty || address.isEmpty || checkIn.isEmpty || checkOut.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Please fill in all fields')));
+      if (mounted) {
+        final lang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppTranslations.get('please_fill_all_fields', lang))));
+      }
       return;
     }
 
@@ -267,8 +273,9 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
       _checkOutDate = null;
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Hotel booking added successfully!'),
+        final lang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppTranslations.get('hotel_booking_added', lang)),
           backgroundColor: Colors.green,
         ));
       }
@@ -299,9 +306,11 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hotel Bookings'),
+        title: Text(AppTranslations.get('hotel_bookings', language)),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Padding(
@@ -316,25 +325,25 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      'Add New Booking',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Text(
+                      AppTranslations.get('add_new_booking', language),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _hotelNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Hotel Name',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: AppTranslations.get('hotel_name', language),
+                        border: const OutlineInputBorder(),
                         hintText: 'Grand Hotel',
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _addressController,
-                      decoration: const InputDecoration(
-                        labelText: 'Address',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: AppTranslations.get('address', language),
+                        border: const OutlineInputBorder(),
                         hintText: '123 Main St, City, Country',
                       ),
                     ),
@@ -344,10 +353,10 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
                         Expanded(
                           child: TextField(
                             controller: _checkInController,
-                            decoration: const InputDecoration(
-                              labelText: 'Check-in Date',
-                              border: OutlineInputBorder(),
-                              suffixIcon: Icon(Icons.calendar_today),
+                            decoration: InputDecoration(
+                              labelText: AppTranslations.get('check_in_date', language),
+                              border: const OutlineInputBorder(),
+                              suffixIcon: const Icon(Icons.calendar_today),
                             ),
                             readOnly: true,
                             onTap: _selectCheckInDate,
@@ -357,10 +366,10 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
                         Expanded(
                           child: TextField(
                             controller: _checkOutController,
-                            decoration: const InputDecoration(
-                              labelText: 'Check-out Date',
-                              border: OutlineInputBorder(),
-                              suffixIcon: Icon(Icons.calendar_today),
+                            decoration: InputDecoration(
+                              labelText: AppTranslations.get('check_out_date', language),
+                              border: const OutlineInputBorder(),
+                              suffixIcon: const Icon(Icons.calendar_today),
                             ),
                             readOnly: true,
                             onTap: _selectCheckOutDate,
@@ -373,7 +382,7 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
                       onPressed: _isAddingBooking ? null : _addBooking,
                       child: _isAddingBooking
                           ? const CircularProgressIndicator(strokeWidth: 2)
-                          : const Text('Add Booking'),
+                          : Text(AppTranslations.get('add_booking', language)),
                     ),
                   ],
                 ),
@@ -381,8 +390,8 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
             ),
 
             const SizedBox(height: 12),
-            const Text('Your Bookings',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(AppTranslations.get('your_bookings', language),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
 
             /// ------------------ BOOKINGS LIST -------------------
@@ -398,11 +407,11 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
                   final docs = snapshot.data!.docs;
 
                   if (docs.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Text(
-                        'No bookings added yet.\nAdd one above!',
+                        AppTranslations.get('no_bookings', language),
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey, fontSize: 16),
+                        style: const TextStyle(color: Colors.grey, fontSize: 16),
                       ),
                     );
                   }
@@ -417,9 +426,9 @@ class _HotelBookingsPageState extends State<HotelBookingsPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 20),
-                            const Text(
-                              "Hotel Overview",
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            Text(
+                              AppTranslations.get('hotel_overview', language),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 12),
 

@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+import 'package:provider/provider.dart';
+import 'language_provider.dart';
+import 'translations.dart';
 
 class TranslationPage extends StatefulWidget {
   const TranslationPage({super.key});
@@ -193,9 +196,11 @@ class _TranslationPageState extends State<TranslationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Translation & Currency'),
+        title: Text(AppTranslations.get('translation', language)),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SingleChildScrollView(
@@ -209,18 +214,18 @@ class _TranslationPageState extends State<TranslationPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('Translator', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(AppTranslations.get('translator', language), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _translateController,
-                      decoration: const InputDecoration(labelText: 'Text to translate'),
+                      decoration: InputDecoration(labelText: AppTranslations.get('text_to_translate', language)),
                       minLines: 1,
                       maxLines: 4,
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Text('Target:'),
+                        Text('${AppTranslations.get('target', language)}:'),
                         const SizedBox(width: 8),
                         DropdownButton<String>(
                           value: _targetLang,
@@ -242,12 +247,12 @@ class _TranslationPageState extends State<TranslationPage> {
                                 height: 16,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Text('Translate'),
+                            : Text(AppTranslations.get('translate', language)),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text('Result:', style: Theme.of(context).textTheme.titleMedium),
+                    Text('${AppTranslations.get('result', language)}:', style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 6),
                     Text(_translatedText),
                   ],
@@ -261,18 +266,18 @@ class _TranslationPageState extends State<TranslationPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('Currency Converter (Bank of Canada)', 
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(AppTranslations.get('currency_converter', language), 
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _amountController,
-                      decoration: const InputDecoration(labelText: 'Amount'),
+                      decoration: InputDecoration(labelText: AppTranslations.get('amount', language)),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Text('From'),
+                        Text(AppTranslations.get('from_currency', language)),
                         const SizedBox(width: 8),
                         DropdownButton<String>(
                           value: _fromCurrency,
@@ -284,7 +289,7 @@ class _TranslationPageState extends State<TranslationPage> {
                           onChanged: (v) => setState(() => _fromCurrency = v ?? _fromCurrency),
                         ),
                         const SizedBox(width: 16),
-                        const Text('To'),
+                        Text(AppTranslations.get('to_currency', language)),
                         const SizedBox(width: 8),
                         DropdownButton<String>(
                           value: _toCurrency,
@@ -304,12 +309,12 @@ class _TranslationPageState extends State<TranslationPage> {
                                 height: 16,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Text('Convert'),
+                            : Text(AppTranslations.get('convert', language)),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text('Result:', style: Theme.of(context).textTheme.titleMedium),
+                    Text('${AppTranslations.get('result', language)}:', style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 6),
                     Text(_conversionResult),
                   ],

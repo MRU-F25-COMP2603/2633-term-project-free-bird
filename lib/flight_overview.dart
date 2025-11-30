@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'language_provider.dart';
+import 'translations.dart';
 
 class DataOverviewPage extends StatelessWidget {
   const DataOverviewPage({super.key});
@@ -8,19 +11,20 @@ class DataOverviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userId = FirebaseAuth.instance.currentUser?.uid;
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Data Overview'),
+        title: Text(AppTranslations.get('data_overview', language)),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: userId == null
-          ? const Center(child: Text('Please log in to view your data'))
-          : _buildOverviewContent(userId),
+          ? Center(child: Text(AppTranslations.get('please_log_in', language)))
+          : _buildOverviewContent(userId, language),
     );
   }
 
-  Widget _buildOverviewContent(String userId) {
+  Widget _buildOverviewContent(String userId, String language) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -35,7 +39,7 @@ class DataOverviewPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Your Travel Dashboard',
+                    AppTranslations.get('your_travel_dashboard', language),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 22,
@@ -43,7 +47,7 @@ class DataOverviewPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Overview of all your travel data',
+                    AppTranslations.get('overview_of_travel', language),
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                 ],
@@ -54,7 +58,7 @@ class DataOverviewPage extends StatelessWidget {
           const SizedBox(height: 16),
 
           //  Flights Summary 
-          _buildSectionHeader('Flights'),
+          _buildSectionHeader(AppTranslations.get('flights', language)),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('flights')
@@ -64,9 +68,9 @@ class DataOverviewPage extends StatelessWidget {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return _buildSummaryCard(
                   icon: Icons.flight,
-                  title: 'Flights',
-                  value: 'Loading...',
-                  subtitle: 'Your flight history',
+                  title: AppTranslations.get('flights', language),
+                  value: AppTranslations.get('loading', language),
+                  subtitle: AppTranslations.get('your_flight_history', language),
                   color: Colors.blue,
                 );
               }
@@ -78,9 +82,9 @@ class DataOverviewPage extends StatelessWidget {
                 children: [
                   _buildSummaryCard(
                     icon: Icons.flight,
-                    title: 'Total Flights',
+                    title: AppTranslations.get('total_flights', language),
                     value: flights.length.toString(),
-                    subtitle: 'Flights tracked',
+                    subtitle: AppTranslations.get('flights_tracked', language),
                     color: Colors.blue,
                   ),
 
@@ -96,7 +100,7 @@ class DataOverviewPage extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Documents Summary 
-          _buildSectionHeader('Documents'),
+          _buildSectionHeader(AppTranslations.get('documents_count', language)),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('files')
@@ -106,9 +110,9 @@ class DataOverviewPage extends StatelessWidget {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return _buildSummaryCard(
                   icon: Icons.folder,
-                  title: 'Documents',
-                  value: 'Loading...',
-                  subtitle: 'Your stored files',
+                  title: AppTranslations.get('documents_count', language),
+                  value: AppTranslations.get('loading', language),
+                  subtitle: AppTranslations.get('your_stored_files', language),
                   color: Colors.green,
                 );
               }
@@ -121,9 +125,9 @@ class DataOverviewPage extends StatelessWidget {
 
               return _buildSummaryCard(
                 icon: Icons.folder,
-                title: 'Stored Documents',
+                title: AppTranslations.get('stored_documents_title', language),
                 value: files.length.toString(),
-                subtitle: '${(totalSize / 1024 / 1024).toStringAsFixed(2)} MB total',
+                subtitle: '${(totalSize / 1024 / 1024).toStringAsFixed(2)} ${AppTranslations.get('mb_total', language)}',
                 color: Colors.green,
               );
             },
@@ -132,13 +136,13 @@ class DataOverviewPage extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Quick Stats 
-          _buildSectionHeader('Quick Stats'),
+          _buildSectionHeader(AppTranslations.get('quick_stats', language)),
           Row(
             children: [
               Expanded(
                 child: _buildStatCard(
                   icon: Icons.flight_takeoff,
-                  value: 'Flights',
+                  value: AppTranslations.get('flights', language),
                   onTap: () {},
                 ),
               ),
@@ -146,7 +150,7 @@ class DataOverviewPage extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   icon: Icons.folder_open,
-                  value: 'Documents',
+                  value: AppTranslations.get('documents_count', language),
                   onTap: () {},
                 ),
               ),
@@ -154,7 +158,7 @@ class DataOverviewPage extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   icon: Icons.translate,
-                  value: 'Translate',
+                  value: AppTranslations.get('translate', language),
                   onTap: () {},
                 ),
               ),
@@ -164,7 +168,7 @@ class DataOverviewPage extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Recent Activity (unchanged)
-          _buildSectionHeader('Recent Activity'),
+          _buildSectionHeader(AppTranslations.get('recent_activity', language)),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('flights')
@@ -185,14 +189,14 @@ class DataOverviewPage extends StatelessWidget {
               final recentFlights = snapshot.data?.docs ?? [];
 
               if (recentFlights.isEmpty) {
-                return const Card(
+                return Card(
                   child: Padding(
-                    padding: EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: Center(
                       child: Text(
-                        'No recent activity\nAdd your first flight to get started!',
+                        AppTranslations.get('no_recent_activity', language),
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
+                        style: const TextStyle(color: Colors.grey),
                       ),
                     ),
                   ),

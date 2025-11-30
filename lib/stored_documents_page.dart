@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'firestore_service.dart';
+import 'language_provider.dart';
+import 'translations.dart';
 
 class StoredDocumentsPage extends StatelessWidget {
   const StoredDocumentsPage({super.key});
@@ -22,14 +25,16 @@ class StoredDocumentsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Stored Documents')),
+      appBar: AppBar(title: Text(AppTranslations.get('stored_documents', language))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Your Documents', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(AppTranslations.get('your_documents', language), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             SizedBox(
               height: 320,
@@ -40,7 +45,7 @@ class StoredDocumentsPage extends StatelessWidget {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
+                    return Center(child: Text('${AppTranslations.get('error', language)}: ${snapshot.error}'));
                   }
 
                   var docs = snapshot.data?.docs ?? [];
@@ -52,9 +57,9 @@ class StoredDocumentsPage extends StatelessWidget {
                     if (bTime == null) return -1;
                     return bTime.compareTo(aTime);
                   });
-
+                  
                   if (docs.isEmpty) {
-                    return const Center(child: Text('No files found.'));
+                    return Center(child: Text(AppTranslations.get('no_files_found', language)));
                   }
 
                   return ListView.builder(
@@ -72,10 +77,10 @@ class StoredDocumentsPage extends StatelessWidget {
                         child: ListTile(
                           leading: const Icon(Icons.insert_drive_file, color: Colors.blueAccent),
                           title: Text(fileName),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('${(data['size'] / 1024).toStringAsFixed(1)} KB'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                              Text('${(data['size'] / 1024).toStringAsFixed(1)} ${AppTranslations.get('kb', language)}'),
                               if (shared.isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4),
@@ -83,8 +88,8 @@ class StoredDocumentsPage extends StatelessWidget {
                                     spacing: 4,
                                     runSpacing: 4,
                                     children: [
-                                      const Text('Shared with: ',
-                                          style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                      Text(AppTranslations.get('shared_with', language),
+                                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
                                       ...shared.map((email) => Chip(
                                             label: Text(email, style: const TextStyle(fontSize: 11)),
                                             deleteIcon: const Icon(Icons.close, size: 16),
@@ -103,20 +108,22 @@ class StoredDocumentsPage extends StatelessWidget {
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.share, color: Colors.teal),
-                                tooltip: 'Share',
+                                tooltip: AppTranslations.get('share', language),
                                 onPressed: () => _share(context, doc.id),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.download),
+                                tooltip: AppTranslations.get('download', language),
                                 onPressed: () => _downloadFile(url, fileName, context),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                tooltip: AppTranslations.get('delete', language),
                                 onPressed: () async {
                                   await FirestoreService.deleteFile(doc.id, path);
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(content: Text('Deleted $fileName')));
+                                        .showSnackBar(SnackBar(content: Text('${AppTranslations.get('deleted', language)} $fileName')));
                                   }
                                 },
                               ),
@@ -131,7 +138,7 @@ class StoredDocumentsPage extends StatelessWidget {
             ),
 
             const SizedBox(height: 16),
-            const Text('Shared Documents', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(AppTranslations.get('shared_documents', language), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             SizedBox(
               height: 320,
@@ -142,7 +149,7 @@ class StoredDocumentsPage extends StatelessWidget {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
+                    return Center(child: Text('${AppTranslations.get('error', language)}: ${snapshot.error}'));
                   }
 
                   var docs = snapshot.data?.docs ?? [];
@@ -156,7 +163,7 @@ class StoredDocumentsPage extends StatelessWidget {
                   });
 
                   if (docs.isEmpty) {
-                    return const Center(child: Text('No shared documents.'));
+                    return Center(child: Text(AppTranslations.get('no_shared_documents', language)));
                   }
 
                   return ListView.builder(

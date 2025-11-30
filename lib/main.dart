@@ -14,6 +14,8 @@ import 'flight_overview.dart'; // ADDED IMPORT FOR FLIGHT OVERVIEW
 import 'package:provider/provider.dart';
 import 'theme_provider.dart';
 import 'text_scale_provider.dart';
+import 'language_provider.dart';
+import 'translations.dart';
 
 /// Firebase Options for Windows
 const FirebaseOptions windows = FirebaseOptions(
@@ -41,6 +43,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => TextScaleProvider()),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
       child: const MyApp(),
     ),
@@ -54,12 +57,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final textScale = Provider.of<TextScaleProvider>(context).scale;
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaleFactor: textScale),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Free Bird',
+        title: AppTranslations.get('app_title', language),
 
         theme: ThemeData.light(),
         darkTheme: ThemeData.dark(),
@@ -106,16 +110,17 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonSize = min(screenWidth / 5, 120.0);
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Free Bird'),
+        title: Text(AppTranslations.get('app_title', language)),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _logout,
-            tooltip: 'Logout',
+            tooltip: AppTranslations.get('logout', language),
           ),
         ],
       ),

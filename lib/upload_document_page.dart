@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
 import 'firestore_service.dart';
+import 'language_provider.dart';
+import 'translations.dart';
 
 class FileUploadPage extends StatefulWidget {
   const FileUploadPage({super.key});
@@ -96,8 +99,10 @@ class _FileUploadPageState extends State<FileUploadPage> {
   /// ------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('File Upload')),
+      appBar: AppBar(title: Text(AppTranslations.get('file_upload', language))),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -105,7 +110,7 @@ class _FileUploadPageState extends State<FileUploadPage> {
             ElevatedButton.icon(
               onPressed: _uploading ? null : _pickAndUploadFile,
               icon: const Icon(Icons.upload_file),
-              label: const Text('Choose File & Upload'),
+              label: Text(AppTranslations.get('choose_file_upload', language)),
             ),
             const SizedBox(height: 20),
 

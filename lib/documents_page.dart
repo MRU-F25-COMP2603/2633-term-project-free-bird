@@ -1,20 +1,24 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'upload_document_page.dart';
 import 'stored_documents_page.dart';
+import 'language_provider.dart';
+import 'translations.dart';
 
 class DocumentsPage extends StatelessWidget {
   const DocumentsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
     // Make buttons responsive to screen size, but not too large
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonSize = min(screenWidth * 0.22, 140.0);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Documents'),
+        title: Text(AppTranslations.get('documents', language)),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Center(
@@ -38,7 +42,7 @@ class DocumentsPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                 ),
-                child: const Text('File Upload', textAlign: TextAlign.center),
+                child: Text(AppTranslations.get('file_upload', language), textAlign: TextAlign.center),
               ),
             ),
             const SizedBox(width: 20),
@@ -58,7 +62,7 @@ class DocumentsPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                 ),
-                child: const Text('Stored Documents', textAlign: TextAlign.center),
+                child: Text(AppTranslations.get('stored_documents', language), textAlign: TextAlign.center),
               ),
             ),
           ],

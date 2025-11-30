@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:free_bird/weather_service.dart';
+import 'package:provider/provider.dart';
 import 'dart:math';
+import 'language_provider.dart';
+import 'translations.dart';
 
 /// ------------------------------------------------------------
 ///  WEATHER + MAP WIDGETS
@@ -318,6 +321,7 @@ class _FlightInputPageState extends State<FlightInputPage> {
   /// ------------------------------------------------------------
 
   Future<void> _addFlight() async {
+    final language = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
     final flightNumber = _flightNumberController.text.trim().toUpperCase();
     final airline = _airlineController.text.trim();
     final startDate = _dateController.text.trim();
@@ -336,7 +340,7 @@ class _FlightInputPageState extends State<FlightInputPage> {
         departureTime.isEmpty ||
         arrivalTime.isEmpty) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+          .showSnackBar(SnackBar(content: Text(AppTranslations.get('please_fill_all_fields', language))));
       return;
     }
 
@@ -373,10 +377,12 @@ class _FlightInputPageState extends State<FlightInputPage> {
       _selectedDate = null;
       _selectedEndDate = null;
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Flight added!'),
-        backgroundColor: Colors.green,
-      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppTranslations.get('flight_added', language)),
+          backgroundColor: Colors.green,
+        ));
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
@@ -392,9 +398,11 @@ class _FlightInputPageState extends State<FlightInputPage> {
 
   @override
   Widget build(BuildContext context) {
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Flight Tracker'),
+        title: Text(AppTranslations.get('flight_tracker', language)),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Padding(
@@ -412,8 +420,8 @@ class _FlightInputPageState extends State<FlightInputPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('Add New Flight',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(AppTranslations.get('add_new_flight', language),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
 
                     Row(
@@ -421,9 +429,9 @@ class _FlightInputPageState extends State<FlightInputPage> {
                         Expanded(
                           child: TextField(
                             controller: _flightNumberController,
-                            decoration: const InputDecoration(
-                              labelText: 'Flight Number',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: AppTranslations.get('flight_number', language),
+                              border: const OutlineInputBorder(),
                               hintText: 'AA123',
                             ),
                             textCapitalization: TextCapitalization.characters,
@@ -433,9 +441,9 @@ class _FlightInputPageState extends State<FlightInputPage> {
                         Expanded(
                           child: TextField(
                             controller: _airlineController,
-                            decoration: const InputDecoration(
-                              labelText: 'Airline',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: AppTranslations.get('airline', language),
+                              border: const OutlineInputBorder(),
                               hintText: 'Air Canada',
                             ),
                           ),
@@ -447,10 +455,10 @@ class _FlightInputPageState extends State<FlightInputPage> {
 
                     TextField(
                       controller: _dateController,
-                      decoration: const InputDecoration(
-                        labelText: 'Start Date',
-                        border: OutlineInputBorder(),
-                        suffixIcon: Icon(Icons.calendar_today),
+                      decoration: InputDecoration(
+                        labelText: AppTranslations.get('start_date', language),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: const Icon(Icons.calendar_today),
                       ),
                       readOnly: true,
                       onTap: _selectStartDate,
@@ -460,10 +468,10 @@ class _FlightInputPageState extends State<FlightInputPage> {
 
                     TextField(
                       controller: _endDateController,
-                      decoration: const InputDecoration(
-                        labelText: 'End Date',
-                        border: OutlineInputBorder(),
-                        suffixIcon: Icon(Icons.calendar_today),
+                      decoration: InputDecoration(
+                        labelText: AppTranslations.get('end_date', language),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: const Icon(Icons.calendar_today),
                       ),
                       readOnly: true,
                       onTap: _selectEndDate,
@@ -476,9 +484,9 @@ class _FlightInputPageState extends State<FlightInputPage> {
                         Expanded(
                           child: TextField(
                             controller: _departureAirportController,
-                            decoration: const InputDecoration(
-                              labelText: 'From',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: AppTranslations.get('from', language),
+                              border: const OutlineInputBorder(),
                               hintText: 'YYC',
                             ),
                           ),
@@ -487,9 +495,9 @@ class _FlightInputPageState extends State<FlightInputPage> {
                         Expanded(
                           child: TextField(
                             controller: _arrivalAirportController,
-                            decoration: const InputDecoration(
-                              labelText: 'To',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: AppTranslations.get('to', language),
+                              border: const OutlineInputBorder(),
                               hintText: 'YYZ',
                             ),
                           ),
@@ -504,9 +512,9 @@ class _FlightInputPageState extends State<FlightInputPage> {
                         Expanded(
                           child: TextField(
                             controller: _departureTimeController,
-                            decoration: const InputDecoration(
-                              labelText: 'Departure Time',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: AppTranslations.get('departure_time', language),
+                              border: const OutlineInputBorder(),
                               hintText: '08:30',
                             ),
                           ),
@@ -515,9 +523,9 @@ class _FlightInputPageState extends State<FlightInputPage> {
                         Expanded(
                           child: TextField(
                             controller: _arrivalTimeController,
-                            decoration: const InputDecoration(
-                              labelText: 'Arrival Time',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: AppTranslations.get('arrival_time', language),
+                              border: const OutlineInputBorder(),
                               hintText: '11:45',
                             ),
                           ),
@@ -531,7 +539,7 @@ class _FlightInputPageState extends State<FlightInputPage> {
                       onPressed: _isAddingFlight ? null : _addFlight,
                       child: _isAddingFlight
                           ? const CircularProgressIndicator(strokeWidth: 2)
-                          : const Text('Add Flight'),
+                          : Text(AppTranslations.get('add_flight', language)),
                     ),
                   ],
                 ),
@@ -544,8 +552,8 @@ class _FlightInputPageState extends State<FlightInputPage> {
             /// YOUR FLIGHTS
             /// ------------------------------------------------------------
 
-            const Text('Your Flights',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(AppTranslations.get('your_flights', language),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
 
             Expanded(
@@ -560,11 +568,11 @@ class _FlightInputPageState extends State<FlightInputPage> {
                   final docs = snapshot.data!.docs;
 
                   if (docs.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Text(
-                        'No flights added yet.\nAdd one above!',
+                        AppTranslations.get('no_flights', language),
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey, fontSize: 16),
+                        style: const TextStyle(color: Colors.grey, fontSize: 16),
                       ),
                     );
                   }
@@ -581,9 +589,9 @@ class _FlightInputPageState extends State<FlightInputPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 20),
-                            const Text(
-                              "Flight Overview",
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            Text(
+                              AppTranslations.get('flight_overview', language),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 10),
 

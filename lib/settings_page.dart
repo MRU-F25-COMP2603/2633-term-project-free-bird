@@ -6,6 +6,8 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import 'theme_provider.dart';
 import 'text_scale_provider.dart';
+import 'language_provider.dart';
+import 'translations.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -16,7 +18,6 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _notifications = true;
-  String _language = "English";
 
   bool _ttsEnabled = false;
   final FlutterTts tts = FlutterTts();
@@ -37,7 +38,6 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       _ttsEnabled = prefs.getBool('ttsEnabled') ?? false;
       _notifications = prefs.getBool('notifications') ?? true;
-      _language = prefs.getString('language') ?? "English";
     });
   }
 
@@ -49,9 +49,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _updateLanguage(String? value) async {
     if (value == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('language', value);
-    setState(() => _language = value);
+    context.read<LanguageProvider>().setLanguage(value);
   }
 
   Future<void> _updateTtsEnabled(bool value) async {
@@ -87,10 +85,11 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final textScale = Provider.of<TextScaleProvider>(context);
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(AppTranslations.get('settings', language)),
         elevation: 0,
       ),
       body: ListView(
@@ -146,7 +145,7 @@ class _SettingsPageState extends State<SettingsPage> {
           // DARK MODE TOGGLE
           // ---------------------------------------------------------
           SwitchListTile(
-            title: const Text("Dark Mode"),
+            title: Text(AppTranslations.get('dark_mode', language)),
             value: context.watch<ThemeProvider>().isDarkMode,
             onChanged: (value) {
               context.read<ThemeProvider>().toggleTheme(value);
@@ -159,7 +158,7 @@ class _SettingsPageState extends State<SettingsPage> {
           // ---------------------------------------------------------
           ListTile(
             leading: const Icon(Icons.text_fields),
-            title: const Text("Text Size"),
+            title: Text(AppTranslations.get('text_size', language)),
             subtitle: Slider(
               value: textScale.scale,
               min: 0.8,
@@ -174,7 +173,7 @@ class _SettingsPageState extends State<SettingsPage> {
           // TEXT-TO-SPEECH TOGGLE
           // ---------------------------------------------------------
           SwitchListTile(
-            title: const Text("Text-to-Speech"),
+            title: Text(AppTranslations.get('text_to_speech', language)),
             value: _ttsEnabled,
             onChanged: _updateTtsEnabled,
             secondary: const Icon(Icons.record_voice_over),
@@ -184,7 +183,7 @@ class _SettingsPageState extends State<SettingsPage> {
           if (_ttsEnabled)
             ListTile(
               leading: const Icon(Icons.volume_up),
-              title: const Text("Speak Screen"),
+              title: Text(AppTranslations.get('speak_screen', language)),
               onTap: () {
                 speak(
                   "Settings. Dark mode. Text size. Text to speech. "
@@ -201,13 +200,13 @@ class _SettingsPageState extends State<SettingsPage> {
           // ---------------------------------------------------------
           ListTile(
             leading: const Icon(Icons.language),
-            title: const Text("Language"),
+            title: Text(AppTranslations.get('language', language)),
             trailing: DropdownButton<String>(
-              value: _language,
+              value: language,
               items: const [
                 DropdownMenuItem(value: "English", child: Text("English")),
-                DropdownMenuItem(value: "French", child: Text("French")),
-                DropdownMenuItem(value: "Spanish", child: Text("Spanish")),
+                DropdownMenuItem(value: "French", child: Text("Français")),
+                DropdownMenuItem(value: "Spanish", child: Text("Español")),
               ],
               onChanged: _updateLanguage,
             ),
@@ -217,7 +216,7 @@ class _SettingsPageState extends State<SettingsPage> {
           // NOTIFICATIONS TOGGLE
           // ---------------------------------------------------------
           SwitchListTile(
-            title: const Text("Notifications"),
+            title: Text(AppTranslations.get('notifications', language)),
             value: _notifications,
             onChanged: _updateNotifications,
             secondary: const Icon(Icons.notifications),
@@ -238,14 +237,14 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "About This App",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  Text(
+                    AppTranslations.get('about_this_app', language),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      const Text("Version: ", style: TextStyle(fontSize: 16)),
+                      Text("${AppTranslations.get('version', language)}: ", style: const TextStyle(fontSize: 16)),
                       Text(
                         "1.0.0",
                         style: TextStyle(
@@ -257,9 +256,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    "FreeBird Travel Companion App\n"
-                    "Created as a COMP 2633 Final Project.\n"
-                    "Features: Document Storage, Camera Uploads, Translation, Flight Tracking, and Hotel Bookings.",
+                    AppTranslations.get('about_description', language),
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[700],
@@ -284,9 +281,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              "Log Out",
-              style: TextStyle(fontSize: 16, color: Colors.white),
+            child: Text(
+              AppTranslations.get('logout', language),
+              style: const TextStyle(fontSize: 16, color: Colors.white),
             ),
           ),
         ],

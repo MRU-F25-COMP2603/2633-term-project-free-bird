@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import 'create_account_page.dart';
+import 'language_provider.dart';
+import 'translations.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,6 +41,8 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: Center(
@@ -60,17 +65,17 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Log in',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                Text(
+                  AppTranslations.get('log_in', language),
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 32),
                 TextField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.person_outline),
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppTranslations.get('email', language),
+                    prefixIcon: const Icon(Icons.person_outline),
+                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
@@ -78,10 +83,10 @@ class _LoginPageState extends State<LoginPage> {
                 TextField(
                   controller: _passwordController,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock_outline),
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppTranslations.get('password', language),
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -106,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Log in', style: TextStyle(fontSize: 16)),
+                        : Text(AppTranslations.get('log_in', language), style: const TextStyle(fontSize: 16)),
                   ),
                 ),
                 if (_errorMessage != null)
@@ -128,9 +133,9 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     );
                   },
-                  child: const Text(
-                    'Create an Account',
-                    style: TextStyle(
+                  child: Text(
+                    AppTranslations.get('create_an_account', language),
+                    style: const TextStyle(
                       color: Colors.blue,
                       decoration: TextDecoration.underline,
                     ),
