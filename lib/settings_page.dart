@@ -85,7 +85,12 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final textScale = Provider.of<TextScaleProvider>(context);
-    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+    String language;
+    try {
+      language = Provider.of<LanguageProvider>(context).currentLanguage;
+    } catch (_) {
+      language = LanguageProvider.currentOrDefault(context);
+    }
 
     return Scaffold(
       appBar: AppBar(

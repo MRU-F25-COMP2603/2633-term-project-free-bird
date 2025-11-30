@@ -57,7 +57,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final textScale = Provider.of<TextScaleProvider>(context).scale;
-    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+    String language;
+    try {
+      language = Provider.of<LanguageProvider>(context).currentLanguage;
+    } catch (_) {
+      language = LanguageProvider.currentOrDefault(context);
+    }
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaleFactor: textScale),
@@ -110,7 +115,12 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonSize = min(screenWidth / 5, 120.0);
-    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+    String language;
+    try {
+      language = Provider.of<LanguageProvider>(context).currentLanguage;
+    } catch (_) {
+      language = LanguageProvider.currentOrDefault(context);
+    }
 
     return Scaffold(
       appBar: AppBar(

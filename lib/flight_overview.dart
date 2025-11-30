@@ -11,7 +11,12 @@ class DataOverviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userId = FirebaseAuth.instance.currentUser?.uid;
-    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+    String language;
+    try {
+      language = Provider.of<LanguageProvider>(context).currentLanguage;
+    } catch (_) {
+      language = LanguageProvider.currentOrDefault(context);
+    }
 
     return Scaffold(
       appBar: AppBar(

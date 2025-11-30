@@ -41,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+    final language = LanguageProvider.currentOrDefault(context);
 
     return Scaffold(
       backgroundColor: Colors.grey[100],

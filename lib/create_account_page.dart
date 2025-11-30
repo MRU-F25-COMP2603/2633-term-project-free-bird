@@ -83,7 +83,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+    final language = LanguageProvider.currentOrDefault(context);
 
     return Scaffold(
       backgroundColor: Colors.grey[100],

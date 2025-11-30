@@ -11,7 +11,7 @@ class DocumentsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+    final language = LanguageProvider.currentOrDefault(context);
     // Make buttons responsive to screen size, but not too large
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonSize = min(screenWidth * 0.22, 140.0);

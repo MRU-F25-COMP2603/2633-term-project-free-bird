@@ -99,7 +99,7 @@ class _FileUploadPageState extends State<FileUploadPage> {
   /// ------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    final language = Provider.of<LanguageProvider>(context).currentLanguage;
+    final language = LanguageProvider.currentOrDefault(context);
 
     return Scaffold(
       appBar: AppBar(title: Text(AppTranslations.get('file_upload', language))),
